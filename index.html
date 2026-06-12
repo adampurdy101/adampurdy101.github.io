@@ -117,9 +117,9 @@ body{padding:env(safe-area-inset-top) 16px calc(env(safe-area-inset-bottom) + 90
   .hero .big{font-size:30px;}
   .hero .story{font-size:13px; line-height:1.5;}
 }
-.overlay{position:fixed; inset:0; background:rgba(0,0,0,0.6); display:none; align-items:flex-end; z-index:100; backdrop-filter:blur(3px);}
+.overlay{position:fixed; inset:0; background:rgba(0,0,0,0.6); display:none; align-items:center; justify-content:center; padding:16px; z-index:100; backdrop-filter:blur(3px);}
 .overlay.open{display:flex;}
-.sheet{background:var(--surface); width:100%; max-width:520px; margin:0 auto; border-radius:24px 24px 0 0; padding:20px 18px calc(env(safe-area-inset-bottom) + 24px); border-top:1px solid var(--line); max-height:92vh; overflow-y:auto;}
+.sheet{background:var(--surface); width:100%; max-width:480px; margin:0 auto; border-radius:24px; padding:22px 18px 24px; border:1px solid var(--line); max-height:90vh; overflow-y:auto;}
 .sheet h2{font-size:19px; font-weight:700; margin-bottom:16px;}
 .field{margin-bottom:12px;}
 .field label{display:block; font-size:12px; color:var(--muted); margin-bottom:5px; font-weight:600;}
@@ -172,11 +172,13 @@ body{padding:env(safe-area-inset-top) 16px calc(env(safe-area-inset-bottom) + 90
   .z-cal{grid-area:cal;}
   .lay .stats{grid-area:stats; flex-direction:column; margin-bottom:0;}
   .lay .hero{grid-area:hero; margin-top:0 !important; margin-bottom:0;}
-  .lay #lists{grid-area:lists; margin-top:0; overflow-y:auto; overscroll-behavior:contain; padding-right:6px;}
+  .lay #lists{grid-area:lists; margin-top:0; overflow-y:auto; overscroll-behavior:contain; border:1px solid var(--line); border-radius:16px; padding:10px 12px; background:rgba(23,29,46,0.45);}
   .lay #lists::-webkit-scrollbar{width:6px;}
   .lay #lists::-webkit-scrollbar-thumb{background:var(--line); border-radius:3px;}
-  .lay #lists::-webkit-scrollbar-track{background:transparent;}
+  .lay #lists::-webkit-scrollbar-track{background:transparent; margin:14px 0;}
   .lay #lists .sec-head:first-child{margin-top:4px;}
+  .grid{grid-auto-rows:1fr;}
+  .cell{aspect-ratio:auto; min-height:0;}
   .lay .stat{padding:13px 15px;}
 }
 .auth{position:fixed; inset:0; background:var(--bg); z-index:300; display:none; align-items:center; justify-content:center; padding:24px;}
@@ -238,7 +240,7 @@ body{padding:env(safe-area-inset-top) 16px calc(env(safe-area-inset-bottom) + 90
 
 <div class="section" style="display:flex; flex-direction:column; align-items:center; gap:6px; padding-bottom:8px;">
   <button class="exp" id="menuBtn">⚙️ Account &amp; backup</button>
-  <div style="color:var(--faint); font-size:10px; font-weight:600;">v19</div>
+  <div style="color:var(--faint); font-size:10px; font-weight:600;">v20</div>
   <input type="file" accept=".json,application/json" class="hiddenfile" id="restoreInput">
 </div>
 
@@ -1044,9 +1046,14 @@ body{padding:env(safe-area-inset-top) 16px calc(env(safe-area-inset-bottom) + 90
 
   function fitRail(){
     var L=document.getElementById("lists");
-    if(window.innerWidth<960){ L.style.maxHeight=""; return; }
-    var top=L.getBoundingClientRect().top;
-    L.style.maxHeight=Math.max(240, window.innerHeight - top - 18)+"px";
+    var G=document.getElementById("grid");
+    if(window.innerWidth<960){ L.style.height=""; L.style.maxHeight=""; G.style.height=""; return; }
+    var gtop=G.getBoundingClientRect().top;
+    G.style.height=Math.max(420, window.innerHeight - gtop - 16)+"px";
+    var gb=G.getBoundingClientRect().bottom;
+    var ltop=L.getBoundingClientRect().top;
+    var h=Math.max(240, Math.min(gb, window.innerHeight-16) - ltop);
+    L.style.height=h+"px"; L.style.maxHeight=h+"px";
   }
   window.addEventListener("resize", fitRail);
 
