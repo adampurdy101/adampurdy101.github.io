@@ -79,6 +79,10 @@ body{padding:env(safe-area-inset-top) 16px calc(env(safe-area-inset-bottom) + 90
   .cell{aspect-ratio:auto; min-height:80px;}
   .cell.empty{min-height:0;}
 }
+@media (max-width:480px){
+  .cell{min-height:118px;}
+  .cell.empty{min-height:0;}
+}
 .row.overdue{border-color:var(--red); background:rgba(232,115,106,0.14);}
 .addbtn{position:fixed; right:18px; bottom:calc(env(safe-area-inset-bottom) + 18px); width:58px; height:58px; border-radius:50%; background:rgba(61,219,166,0.16); color:var(--green); border:1.5px dashed rgba(61,219,166,0.65); font-size:27px; font-weight:700; box-shadow:0 4px 14px rgba(0,0,0,0.25); cursor:pointer; z-index:50; display:flex; align-items:center; justify-content:center; padding:0; backdrop-filter:blur(4px); opacity:0.85;}
 .addbtn:active{transform:scale(0.94); background:rgba(61,219,166,0.3);}
@@ -232,7 +236,7 @@ body{padding:env(safe-area-inset-top) 16px calc(env(safe-area-inset-bottom) + 90
 
 <div class="section" style="display:flex; flex-direction:column; align-items:center; gap:6px; padding-bottom:8px;">
   <button class="exp" id="menuBtn">⚙️ Account &amp; backup</button>
-  <div style="color:var(--faint); font-size:10px; font-weight:600;">v17</div>
+  <div style="color:var(--faint); font-size:10px; font-weight:600;">v18</div>
   <input type="file" accept=".json,application/json" class="hiddenfile" id="restoreInput">
 </div>
 
