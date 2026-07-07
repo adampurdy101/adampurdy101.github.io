@@ -238,6 +238,12 @@ body{padding:env(safe-area-inset-top) 16px calc(env(safe-area-inset-bottom) + 90
   border:1px solid var(--line); color:var(--ink); padding:13px 40px 13px 13px; border-radius:11px; font-size:16px; -webkit-appearance:none; appearance:none;}
 .field select:focus{outline:none; border-color:var(--indigo); box-shadow:0 0 0 3px rgba(143,158,255,0.16);}
 .row .sub .acct{color:var(--blue); font-weight:600;}
+/* linked-account markers: green ✓ = account set, red ? = no account yet */
+.lnkmark{display:inline-flex; align-items:center; justify-content:center; width:17px; height:17px; border-radius:50%; font-size:10px; font-weight:800; flex-shrink:0; line-height:1;}
+.lnkmark.ok{background:rgba(69,230,176,0.16); color:var(--green); border:1px solid rgba(69,230,176,0.55); box-shadow:0 0 10px -3px rgba(69,230,176,0.5);}
+.lnkmark.no{background:rgba(255,138,128,0.14); color:var(--red); border:1px solid rgba(255,138,128,0.55); box-shadow:0 0 10px -3px rgba(255,138,128,0.45);}
+.row .amt2{display:flex; align-items:center; gap:7px;}
+.asum .an .lnkmark{margin-right:7px; vertical-align:-3px;}
 .acct-row{display:flex; align-items:center; gap:10px; background:var(--well); border:1px solid var(--line); border-radius:11px; padding:11px 12px; margin-bottom:8px; box-shadow:var(--sheen);}
 .acct-row .ai{width:34px; height:34px; border-radius:9px; background:linear-gradient(150deg, rgba(143,158,255,0.22), rgba(143,158,255,0.06)); border:1px solid rgba(143,158,255,0.28); display:flex; align-items:center; justify-content:center; font-size:16px; flex-shrink:0;}
 .acct-row .at{flex:1; min-width:0;}
@@ -435,7 +441,7 @@ body{padding:env(safe-area-inset-top) 16px calc(env(safe-area-inset-bottom) + 90
 
 <div class="section" style="display:flex; flex-direction:column; align-items:center; gap:6px; padding-bottom:8px;">
   <button class="exp" id="menuBtn">⚙️ Account &amp; backup</button>
-  <div style="color:var(--faint); font-size:10px; font-weight:600;">v23</div>
+  <div style="color:var(--faint); font-size:10px; font-weight:600;">v24</div>
   <input type="file" accept=".json,application/json" class="hiddenfile" id="restoreInput">
 </div>
 
@@ -512,11 +518,11 @@ body{padding:env(safe-area-inset-top) 16px calc(env(safe-area-inset-bottom) + 90
 <div class="overlay" id="acctOverlay">
   <div class="sheet">
     <h2>Payment accounts</h2>
-    <p style="font-size:13px; color:var(--muted); line-height:1.5; margin-bottom:14px;">Add each account your bills pull from — just the bank, a nickname, and the <b>last 4 digits</b>. Never store the full account number here.</p>
+    <p style="font-size:13px; color:var(--muted); line-height:1.5; margin-bottom:14px;">Add each account your bills pull from — just the bank, a nickname, and the <b>last 4–8 digits</b>. Never store the full account number here.</p>
     <div id="acctList"></div>
     <div class="fr" style="margin-top:14px;">
       <div class="field"><label>Bank</label><input id="a_bank" placeholder="e.g. Qualstar" autocomplete="off"></div>
-      <div class="field"><label>Last 4 digits</label><input id="a_last4" inputmode="numeric" maxlength="4" placeholder="1234" autocomplete="off"></div>
+      <div class="field"><label>Last digits (4–8)</label><input id="a_last4" inputmode="numeric" maxlength="8" placeholder="1234" autocomplete="off"></div>
     </div>
     <div class="field"><label>Nickname</label><input id="a_nick" placeholder="e.g. Checking" autocomplete="off"></div>
     <div class="sheet-actions">
@@ -1019,6 +1025,15 @@ body{padding:env(safe-area-inset-top) 16px calc(env(safe-area-inset-bottom) + 90
 
   function billsForMonth(y,m){ return bills.filter(function(b){return billShowsInMonth(b,y,m);}); }
 
+  // Universal marker: green ✓ = account linked, red ? = no account yet.
+  function makeLnkMark(linked){
+    var s=document.createElement("span");
+    s.className="lnkmark "+(linked?"ok":"no");
+    s.textContent=linked?"✓":"?";
+    s.title=linked?"Account set":"No account set yet";
+    return s;
+  }
+
   function renderHero(y,m,ent){
     var story=document.getElementById("story");
     var total=0, paidSum=0; var paid=[], unpaid=[];
@@ -1155,6 +1170,7 @@ body{padding:env(safe-area-inset-top) 16px calc(env(safe-area-inset-bottom) + 90
     var card=document.createElement("div"); card.className="asum"+(opts.unassigned?" unassigned":"")+(opts.total?" total":"");
     var top=document.createElement("div"); top.className="top";
     var an=document.createElement("div"); an.className="an";
+    if(opts.marker) an.appendChild(makeLnkMark(opts.marker==="ok"));
     an.appendChild(document.createTextNode(label));
     if(sub){ var sm=document.createElement("small"); sm.textContent=" "+sub; an.appendChild(sm); }
     var av=document.createElement("div"); av.className="av";
@@ -1198,14 +1214,14 @@ body{padding:env(safe-area-inset-top) 16px calc(env(safe-area-inset-bottom) + 90
     accounts.forEach(function(a){
       var t=acctMonthTotals(a.id,y,m,true);
       totals.paid+=t.paid; totals.total+=t.total; totals.count+=t.count;
-      cards.push(acctSumCard(a.bank+(a.nick?" · "+a.nick:""), "••"+a.last4, t, {onTap:function(){ openAcctHist(a); }}));
+      cards.push(acctSumCard(a.bank+(a.nick?" · "+a.nick:""), "••"+a.last4, t, {marker:"ok", onTap:function(){ openAcctHist(a); }}));
     });
     var un=acctMonthTotals(null,y,m,true);
     totals.paid+=un.paid; totals.total+=un.total;
     // Overall card only when there's something to roll up (2+ accounts or unassigned bills).
-    if(accounts.length>1 || un.count) frag.appendChild(acctSumCard("All accounts","",totals,{total:true}));
+    if(accounts.length>1 || un.count) frag.appendChild(acctSumCard("All accounts","",totals,{total:true, marker:"ok"}));
     cards.forEach(function(c){ frag.appendChild(c); });
-    if(un.count) frag.appendChild(acctSumCard("No account set","",un,{unassigned:true,onTap:function(){ openAcctHist(null); }}));
+    if(un.count) frag.appendChild(acctSumCard("No account set","",un,{unassigned:true, marker:"no", onTap:function(){ openAcctHist(null); }}));
     wrap.appendChild(frag);
   }
   var histOverlay=document.getElementById("histOverlay");
@@ -1262,7 +1278,10 @@ body{padding:env(safe-area-inset-top) 16px calc(env(safe-area-inset-bottom) + 90
       var nm=document.createElement("div"); nm.className="nm";
       nm.appendChild(document.createTextNode(b.name));
       if(b.photo){ var pf=document.createElement("span"); pf.className="photoflag"; pf.textContent="📷"; nm.appendChild(pf); }
-      var amt=document.createElement("div"); amt.className="amt2"; amt.textContent=fmtMoney(b.amount);
+      var amt=document.createElement("div"); amt.className="amt2";
+      amt.appendChild(makeLnkMark(!!acctById(b.acct)));
+      var amtTx=document.createElement("span"); amtTx.textContent=fmtMoney(b.amount);
+      amt.appendChild(amtTx);
       nmline.appendChild(nm); nmline.appendChild(amt);
       var sub=document.createElement("div"); sub.className="sub";
       var subHtml="Due "+months[m].slice(0,3)+" "+d;
@@ -1307,7 +1326,10 @@ body{padding:env(safe-area-inset-top) 16px calc(env(safe-area-inset-bottom) + 90
       var info=document.createElement("div"); info.className="info";
       var nmline=document.createElement("div"); nmline.className="nmline";
       var nm=document.createElement("div"); nm.className="nm"; nm.textContent=b.name;
-      var amt=document.createElement("div"); amt.className="amt2"; amt.textContent=fmtMoney(b.amount);
+      var amt=document.createElement("div"); amt.className="amt2";
+      amt.appendChild(makeLnkMark(!!acctById(b.acct)));
+      var amtTx=document.createElement("span"); amtTx.textContent=fmtMoney(b.amount);
+      amt.appendChild(amtTx);
       nmline.appendChild(nm); nmline.appendChild(amt);
       var sub=document.createElement("div"); sub.className="sub";
       var sh="Due "+months[m].slice(0,3)+" "+d;
@@ -1395,7 +1417,7 @@ body{padding:env(safe-area-inset-top) 16px calc(env(safe-area-inset-bottom) + 90
     }
     drow("Status", paidNow?"Paid ✓":(overdue?"Past due":"Pending"), paidNow?"ok":(overdue?"warn":""));
     var al=acctLabelFull(b.acct);
-    drow("Pays from", al||"No account set", al?"":"faint");
+    drow("Pays from", al?("✓ "+al):"? No account set", al?"ok":"warn");
     drow("Repeats", b.recur==="monthly"?"Every month":(b.recur==="biweekly"?"Every 2 weeks":"One time"));
     var rd=(typeof b.remindDays==="number")?b.remindDays:2;
     drow("Reminder", rd===0?"Due day · 9 AM":(rd===1?"1 day before · 9 AM":rd+" days before · 9 AM"));
@@ -1625,7 +1647,7 @@ body{padding:env(safe-area-inset-top) 16px calc(env(safe-area-inset-bottom) + 90
     var nick=document.getElementById("a_nick").value.trim();
     var last4=document.getElementById("a_last4").value.trim().replace(/\D/g,"");
     if(!bank){ alert("Add the bank name (e.g. Qualstar)."); return; }
-    if(last4.length!==4){ alert("Enter all 4 digits at the end of the account number."); return; }
+    if(last4.length<4||last4.length>8){ alert("Enter the last 4 to 8 digits of the account number."); return; }
     if(editAcctId){
       accounts.forEach(function(a){ if(a.id===editAcctId){ a.bank=bank; a.nick=nick; a.last4=last4; } });
     } else {
