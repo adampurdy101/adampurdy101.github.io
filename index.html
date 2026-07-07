@@ -274,6 +274,8 @@ body{padding:env(safe-area-inset-top) 16px calc(env(safe-area-inset-bottom) + 90
 .asum .av-wrap{display:flex; align-items:center; gap:9px; flex-shrink:0;}
 .acct-del{background:rgba(255,138,128,0.12); border:1px solid rgba(255,138,128,0.5); color:var(--red); font-size:13px; line-height:1; cursor:pointer; padding:7px 9px; border-radius:9px; flex-shrink:0;}
 .acct-del:active{background:rgba(255,138,128,0.26);}
+.sec-add{margin-left:auto; background:rgba(69,230,176,0.12); border:1px solid rgba(69,230,176,0.5); color:var(--green); font-size:12px; font-weight:700; padding:6px 12px; border-radius:9px; cursor:pointer; white-space:nowrap; flex-shrink:0;}
+.sec-add:active{background:rgba(69,230,176,0.26);}
 .asum.total{border-color:rgba(255,206,107,0.40); background:linear-gradient(150deg, rgba(64,54,28,0.42), rgba(23,31,60,0.60)); cursor:default; box-shadow:0 12px 30px -18px rgba(4,8,24,0.9), 0 0 26px -12px rgba(255,206,107,0.35), var(--sheen);}
 .asum.total .av{color:var(--gold); text-shadow:0 0 18px rgba(255,206,107,0.40);}
 .acct-cta{width:100%; background:var(--well); border:1.5px dashed rgba(158,182,255,0.35); color:var(--muted); padding:16px 12px; border-radius:var(--radius-sm); font-size:13px; font-weight:600; cursor:pointer; text-align:center; line-height:1.5;}
@@ -449,7 +451,7 @@ body{padding:env(safe-area-inset-top) 16px calc(env(safe-area-inset-bottom) + 90
 
 <div class="section" style="display:flex; flex-direction:column; align-items:center; gap:6px; padding-bottom:8px;">
   <button class="exp" id="menuBtn">⚙️ Account &amp; backup</button>
-  <div style="color:var(--faint); font-size:10px; font-weight:600;">v27</div>
+  <div style="color:var(--faint); font-size:10px; font-weight:600;">v28</div>
   <input type="file" accept=".json,application/json" class="hiddenfile" id="restoreInput">
 </div>
 
@@ -1219,6 +1221,9 @@ body{padding:env(safe-area-inset-top) 16px calc(env(safe-area-inset-bottom) + 90
     var frag=document.createDocumentFragment();
     var head=document.createElement("div"); head.className="sec-head";
     head.innerHTML='<span class="sec-title">My accounts · '+months[m].slice(0,3)+'</span><span class="sec-count">'+accounts.length+'</span>';
+    var addBtn=document.createElement("button"); addBtn.className="sec-add"; addBtn.textContent="＋ Add"; addBtn.setAttribute("aria-label","Add an account");
+    addBtn.onclick=openAcctSheet;
+    head.appendChild(addBtn);
     frag.appendChild(head);
     if(!accounts.length){
       var cta=document.createElement("button"); cta.className="acct-cta";
