@@ -271,6 +271,9 @@ body{padding:env(safe-area-inset-top) 16px calc(env(safe-area-inset-bottom) + 90
 .asum .foot .lft.done{color:var(--green); text-shadow:0 0 14px rgba(69,230,176,0.35);}
 .asum .av small{font-size:11px; font-weight:600; color:var(--muted);}
 .asum.unassigned{border-style:dashed;}
+.asum .av-wrap{display:flex; align-items:center; gap:9px; flex-shrink:0;}
+.acct-del{background:rgba(255,138,128,0.12); border:1px solid rgba(255,138,128,0.5); color:var(--red); font-size:13px; line-height:1; cursor:pointer; padding:7px 9px; border-radius:9px; flex-shrink:0;}
+.acct-del:active{background:rgba(255,138,128,0.26);}
 .asum.total{border-color:rgba(255,206,107,0.40); background:linear-gradient(150deg, rgba(64,54,28,0.42), rgba(23,31,60,0.60)); cursor:default; box-shadow:0 12px 30px -18px rgba(4,8,24,0.9), 0 0 26px -12px rgba(255,206,107,0.35), var(--sheen);}
 .asum.total .av{color:var(--gold); text-shadow:0 0 18px rgba(255,206,107,0.40);}
 .acct-cta{width:100%; background:var(--well); border:1.5px dashed rgba(158,182,255,0.35); color:var(--muted); padding:16px 12px; border-radius:var(--radius-sm); font-size:13px; font-weight:600; cursor:pointer; text-align:center; line-height:1.5;}
@@ -446,7 +449,7 @@ body{padding:env(safe-area-inset-top) 16px calc(env(safe-area-inset-bottom) + 90
 
 <div class="section" style="display:flex; flex-direction:column; align-items:center; gap:6px; padding-bottom:8px;">
   <button class="exp" id="menuBtn">⚙️ Account &amp; backup</button>
-  <div style="color:var(--faint); font-size:10px; font-weight:600;">v26</div>
+  <div style="color:var(--faint); font-size:10px; font-weight:600;">v27</div>
   <input type="file" accept=".json,application/json" class="hiddenfile" id="restoreInput">
 </div>
 
@@ -555,6 +558,7 @@ body{padding:env(safe-area-inset-top) 16px calc(env(safe-area-inset-bottom) + 90
     <div id="histBody"></div>
     <div class="sheet-actions">
       <button class="btn" id="histClose">Close</button>
+      <button class="btn" id="histDelete" style="display:none; color:var(--red); border-color:rgba(255,138,128,0.5); background:rgba(255,138,128,0.10);">🗑 Delete account</button>
     </div>
   </div>
 </div>
@@ -1180,7 +1184,17 @@ body{padding:env(safe-area-inset-top) 16px calc(env(safe-area-inset-bottom) + 90
     if(sub){ var sm=document.createElement("small"); sm.textContent=" "+sub; an.appendChild(sm); }
     var av=document.createElement("div"); av.className="av";
     av.innerHTML=fmtMoney(t.paid)+" <small>pulled</small>";
-    top.appendChild(an); top.appendChild(av);
+    top.appendChild(an);
+    if(opts.onDelete){
+      var avw=document.createElement("div"); avw.className="av-wrap";
+      avw.appendChild(av);
+      var tb=document.createElement("button"); tb.className="acct-del"; tb.textContent="🗑"; tb.setAttribute("aria-label","Delete this account"); tb.title="Delete this account";
+      tb.onclick=function(ev){ ev.stopPropagation(); opts.onDelete(); };
+      avw.appendChild(tb);
+      top.appendChild(avw);
+    } else {
+      top.appendChild(av);
+    }
     card.appendChild(top);
     var bar=document.createElement("div"); bar.className="bar";
     var fill=document.createElement("i");
@@ -1219,7 +1233,7 @@ body{padding:env(safe-area-inset-top) 16px calc(env(safe-area-inset-bottom) + 90
     accounts.forEach(function(a){
       var t=acctMonthTotals(a.id,y,m,true);
       totals.paid+=t.paid; totals.total+=t.total; totals.count+=t.count;
-      cards.push(acctSumCard(a.bank+(a.nick?" · "+a.nick:""), "••"+a.last4, t, {marker:"ok", onTap:function(){ openAcctHist(a); }}));
+      cards.push(acctSumCard(a.bank+(a.nick?" · "+a.nick:""), "••"+a.last4, t, {marker:"ok", onTap:function(){ openAcctHist(a); }, onDelete:function(){ deleteAccount(a); }}));
     });
     var un=acctMonthTotals(null,y,m,true);
     totals.paid+=un.paid; totals.total+=un.total;
@@ -1260,6 +1274,9 @@ body{padding:env(safe-area-inset-top) 16px calc(env(safe-area-inset-bottom) + 90
       row.appendChild(hm); row.appendChild(hv);
       B.appendChild(row);
     });
+    var hd=document.getElementById("histDelete");
+    if(a){ hd.style.display=""; hd.onclick=function(){ if(deleteAccount(a)) histOverlay.classList.remove("open"); }; }
+    else { hd.style.display="none"; hd.onclick=null; }
     histOverlay.classList.add("open");
   }
   document.getElementById("histClose").onclick=function(){ histOverlay.classList.remove("open"); };
@@ -1598,6 +1615,17 @@ body{padding:env(safe-area-inset-top) 16px calc(env(safe-area-inset-bottom) + 90
     editAcctId=null;
     document.getElementById("acctSave").textContent="Add account";
   }
+  function deleteAccount(a){
+    var used=bills.filter(function(x){return x.acct===a.id;}).length;
+    var msg="Delete "+a.bank+(a.nick?" · "+a.nick:"")+" ••"+a.last4+"?";
+    if(used) msg+="\n\n"+used+" bill(s) point at it — they'll show no account until you pick a new one.";
+    if(!confirm(msg)) return false;
+    accounts=accounts.filter(function(x){return x.id!==a.id;});
+    bills.forEach(function(x){ if(x.acct===a.id) x.acct=null; });
+    if(editAcctId===a.id) clearAcctForm();
+    markAcctsDirty(); saveAccounts(); save(); render();
+    return true;
+  }
   function renderAcctList(){
     var L=document.getElementById("acctList"); L.innerHTML="";
     if(!accounts.length){ L.innerHTML='<div class="empty-msg" style="padding:8px 0;">No accounts yet — add your first one below.</div>'; return; }
@@ -1618,16 +1646,7 @@ body{padding:env(safe-area-inset-top) 16px calc(env(safe-area-inset-bottom) + 90
       };
       row.appendChild(ed);
       var del=document.createElement("button"); del.className="del-acct"; del.textContent="🗑 Delete"; del.setAttribute("aria-label","Delete account");
-      del.onclick=function(){
-        var used=bills.filter(function(x){return x.acct===a.id;}).length;
-        var msg="Delete "+a.bank+" ••"+a.last4+"?";
-        if(used) msg+="\n\n"+used+" bill(s) point at it — they'll show no account until you pick a new one.";
-        if(!confirm(msg)) return;
-        accounts=accounts.filter(function(x){return x.id!==a.id;});
-        bills.forEach(function(x){ if(x.acct===a.id) x.acct=null; });
-        if(editAcctId===a.id) clearAcctForm();
-        markAcctsDirty(); saveAccounts(); save(); renderAcctList(); render();
-      };
+      del.onclick=function(){ if(deleteAccount(a)) renderAcctList(); };
       row.appendChild(del);
       L.appendChild(row);
     });
