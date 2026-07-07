@@ -71,14 +71,45 @@ body{padding:env(safe-area-inset-top) 16px calc(env(safe-area-inset-bottom) + 90
     radial-gradient(26% 22% at 14% 78%, rgba(84,158,255,0.09), transparent 70%);
   filter:blur(72px);
 }
+/* a slow light-curtain that sweeps across the sky (child of the aurora so it
+   paints ABOVE the opaque sky base) */
+.mx-curtain{position:absolute; inset:-20%; pointer-events:none;
+  background:linear-gradient(104deg, transparent 30%, rgba(88,214,188,0.07) 42%, rgba(112,148,255,0.11) 50%, rgba(88,214,188,0.06) 58%, transparent 70%);
+  filter:blur(48px); transform:translateX(-12%); will-change:transform;}
 @media (prefers-reduced-motion: no-preference){
   .mx-aurora::before{animation:mxDriftA 130s ease-in-out infinite alternate;}
   .mx-aurora::after{animation:mxDriftB 170s ease-in-out infinite alternate-reverse;}
+  .mx-aurora{animation:mxTwinkle 7s ease-in-out infinite alternate;}
+  .mx-curtain{animation:mxCurtain 90s ease-in-out infinite alternate;}
   .hero:after{animation:mxBreathe 16s ease-in-out infinite alternate;}
 }
 @keyframes mxDriftA{from{transform:translate3d(-3.5%,-2.5%,0) rotate(0.001deg) scale(1);} to{transform:translate3d(3.5%,2%,0) rotate(0.001deg) scale(1.10);}}
 @keyframes mxDriftB{from{transform:translate3d(3%,2%,0) scale(1.06);} to{transform:translate3d(-3%,-2.5%,0) scale(1);}}
 @keyframes mxBreathe{from{opacity:0.55; transform:scale(1);} to{opacity:1; transform:scale(1.10);}}
+@keyframes mxTwinkle{from{opacity:0.90;} to{opacity:1;}}
+@keyframes mxCurtain{from{transform:translateX(-12%);} to{transform:translateX(12%);}}
+/* on big screens the sky gets to really perform */
+@media (min-width:960px){
+  .mx-aurora::before{
+    background:conic-gradient(from 212deg at 52% 44%,
+      transparent 0deg,
+      rgba(64,224,182,0.20) 42deg,
+      rgba(96,140,255,0.24) 96deg,
+      rgba(64,224,182,0.10) 140deg,
+      transparent 180deg,
+      rgba(150,96,255,0.19) 236deg,
+      rgba(96,140,255,0.10) 288deg,
+      transparent 330deg);
+    filter:blur(56px);}
+  .mx-aurora::after{
+    background:
+      radial-gradient(34% 26% at 28% 34%, rgba(84,158,255,0.26), transparent 70%),
+      radial-gradient(28% 24% at 71% 26%, rgba(64,224,190,0.22), transparent 70%),
+      radial-gradient(34% 30% at 58% 76%, rgba(146,96,255,0.21), transparent 70%),
+      radial-gradient(26% 22% at 14% 78%, rgba(84,158,255,0.16), transparent 70%),
+      radial-gradient(60% 34% at 50% 104%, rgba(64,200,255,0.14), transparent 72%);
+    filter:blur(64px);}
+}
 
 .head{display:flex; align-items:center; justify-content:space-between; padding:18px 2px 14px; gap:8px;}
 .title{font-size:15px; font-weight:600; letter-spacing:0.3px; color:var(--indigo); text-transform:uppercase; text-shadow:0 0 18px rgba(143,158,255,0.45);}
@@ -225,7 +256,13 @@ body{padding:env(safe-area-inset-top) 16px calc(env(safe-area-inset-bottom) + 90
 .asum .bar{margin-bottom:7px;}
 .asum .foot{display:flex; justify-content:space-between; font-size:12px; color:var(--muted); gap:8px;}
 .asum .foot .hint{color:var(--faint);}
+.asum .foot .lft{color:var(--gold); font-weight:700; text-shadow:0 0 14px rgba(255,206,107,0.35);}
+.asum .foot .lft.done{color:var(--green); text-shadow:0 0 14px rgba(69,230,176,0.35);}
+.asum .av small{font-size:11px; font-weight:600; color:var(--muted);}
 .asum.unassigned{border-style:dashed;}
+.asum.total{border-color:rgba(255,206,107,0.40); background:linear-gradient(150deg, rgba(64,54,28,0.42), rgba(23,31,60,0.60)); cursor:default; box-shadow:0 12px 30px -18px rgba(4,8,24,0.9), 0 0 26px -12px rgba(255,206,107,0.35), var(--sheen);}
+.asum.total .av{color:var(--gold); text-shadow:0 0 18px rgba(255,206,107,0.40);}
+.acct-cta{width:100%; background:var(--well); border:1.5px dashed rgba(158,182,255,0.35); color:var(--muted); padding:16px 12px; border-radius:var(--radius-sm); font-size:13px; font-weight:600; cursor:pointer; text-align:center; line-height:1.5;}
 .hist-row{display:flex; justify-content:space-between; align-items:center; padding:11px 2px; border-bottom:1px solid var(--line); font-size:14px;}
 .hist-row:last-child{border-bottom:none;}
 .hist-row .hm{color:var(--muted); font-weight:600;}
@@ -234,6 +271,27 @@ body{padding:env(safe-area-inset-top) 16px calc(env(safe-area-inset-bottom) + 90
 .hist-sum{background:var(--well); border:1px solid var(--line); border-radius:11px; padding:12px 14px; margin-bottom:10px; font-size:13px; color:var(--muted); line-height:1.6; box-shadow:var(--sheen);}
 .hist-sum b{color:var(--ink);}
 .remind-note{font-size:12px; color:var(--muted); line-height:1.5; margin-top:8px;}
+/* bill details sheet */
+.detail-head{display:flex; align-items:center; gap:12px; margin-bottom:6px;}
+.detail-head .ic{width:46px; height:46px; border-radius:11px; flex-shrink:0;}
+.detail-head .dh-tx{flex:1; min-width:0;}
+.detail-head .dh-name{font-size:18px; font-weight:800; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; text-shadow:0 0 22px rgba(143,158,255,0.30);}
+.detail-head .dh-status{font-size:13px; color:var(--muted); margin-top:2px;}
+.detail-head .dh-status .ok{color:var(--green); font-weight:700;}
+.detail-head .dh-status .warn{color:var(--red); font-weight:700;}
+.detail-head .dh-amt{font-size:24px; font-weight:800; flex-shrink:0; text-shadow:0 2px 24px rgba(130,160,255,0.40);}
+.drows{background:var(--well); border:1px solid var(--line); border-radius:12px; padding:2px 14px; margin:12px 0 0; box-shadow:var(--sheen);}
+.drow{display:flex; justify-content:space-between; align-items:center; gap:12px; padding:12px 0; border-bottom:1px solid var(--line); font-size:14px;}
+.drow:last-child{border-bottom:none;}
+.drow .dl{color:var(--muted); flex-shrink:0;}
+.drow .dv{font-weight:600; text-align:right; min-width:0;}
+.drow .dv.ok{color:var(--green);}
+.drow .dv.warn{color:var(--red);}
+.drow .dv.faint{color:var(--faint); font-weight:500;}
+.dphoto{margin-top:12px;}
+.dphoto img{width:100%; max-height:190px; object-fit:cover; border-radius:12px; border:1px solid var(--edge); cursor:pointer; display:block; box-shadow:0 12px 32px -16px rgba(0,0,0,0.7);}
+.dphoto .dcap{font-size:11px; color:var(--faint); text-align:center; margin-top:5px;}
+.dphoto-add{width:100%; padding:13px; border:1.5px dashed rgba(158,182,255,0.35); background:var(--well); color:var(--muted); border-radius:11px; font-size:13px; font-weight:600; cursor:pointer; margin-top:12px;}
 .bigstep{display:flex; gap:10px; align-items:flex-start; margin:10px 0; font-size:14px; line-height:1.5;}
 .bigstep .n{width:24px; height:24px; border-radius:50%; background:linear-gradient(150deg, rgba(143,158,255,0.26), rgba(143,158,255,0.08)); border:1px solid rgba(143,158,255,0.45); display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; flex-shrink:0; color:#c6cfff; box-shadow:0 0 12px -4px rgba(143,158,255,0.55);}
 .fr>div{flex:1;} .fr{display:flex; gap:10px;}
@@ -277,19 +335,30 @@ body{padding:env(safe-area-inset-top) 16px calc(env(safe-area-inset-bottom) + 90
 .viewer-body img{max-width:100%; max-height:100%; border-radius:8px; box-shadow:0 20px 60px rgba(0,0,0,0.6);}
 .viewer-body .nophoto{color:#9aa4c8; text-align:center; font-size:15px; padding:40px; line-height:1.6;}
 .hiddenfile{display:none;}
-@media (min-width:960px){
-  body{max-width:1330px;}
-  .lay{display:grid; grid-template-columns:420px 1fr; gap:20px; align-items:start; grid-template-areas:"hero cal" "stats cal" "lists cal";}
-  .z-cal{grid-area:cal;}
+@media (min-width:960px) and (min-height:740px){
+  /* One screen, no page scroll — only the rails scroll inside themselves.
+     Gated on window height too: a short window falls back to the normal
+     scrolling page instead of collapsing the bills rail to nothing. */
+  html,body{height:100%; overflow:hidden;}
+  body{max-width:none; height:100vh; height:100dvh; display:flex; flex-direction:column; padding:10px 26px 20px;}
+  .head{flex:0 0 auto; padding:8px 2px 12px;}
+  .lay{flex:1; min-height:0; display:grid; gap:18px; align-items:stretch;
+    grid-template-columns:minmax(240px,3fr) minmax(340px,5.5fr) minmax(270px,3.2fr);
+    grid-template-rows:auto auto minmax(0,1fr);
+    grid-template-areas:"hero cal accts" "stats cal accts" "lists cal accts";}
+  .z-cal{grid-area:cal; display:flex; flex-direction:column; min-height:0;}
+  .grid{flex:1; min-height:0; grid-auto-rows:1fr;}
+  .cell{aspect-ratio:auto; min-height:0;}
   .lay .stats{grid-area:stats; flex-direction:column; margin-bottom:0;}
   .lay .hero{grid-area:hero; margin-top:0 !important; margin-bottom:0;}
-  .lay #lists{grid-area:lists; margin-top:0; overflow-y:auto; overscroll-behavior:contain; border:1px solid var(--line); border-radius:16px; padding:10px 12px; background:rgba(17,24,48,0.42); -webkit-backdrop-filter:blur(12px) saturate(1.3); backdrop-filter:blur(12px) saturate(1.3); box-shadow:var(--sheen);}
-  .lay #lists::-webkit-scrollbar{width:6px;}
-  .lay #lists::-webkit-scrollbar-thumb{background:rgba(158,182,255,0.28); border-radius:3px;}
-  .lay #lists::-webkit-scrollbar-track{background:transparent; margin:14px 0;}
-  .lay #lists .sec-head:first-child{margin-top:4px;}
-  .grid{grid-auto-rows:1fr;}
-  .cell{aspect-ratio:auto; min-height:0;}
+  .lay #lists, #acctPanel{margin-top:0; min-height:0; overflow-y:auto; overscroll-behavior:contain; border:1px solid var(--line); border-radius:16px; padding:0 12px 10px; background:rgba(17,24,48,0.42); -webkit-backdrop-filter:blur(12px) saturate(1.3); backdrop-filter:blur(12px) saturate(1.3); box-shadow:var(--sheen);}
+  .lay #lists{grid-area:lists;}
+  #acctPanel{grid-area:accts;}
+  .lay #lists::-webkit-scrollbar, #acctPanel::-webkit-scrollbar{width:6px;}
+  .lay #lists::-webkit-scrollbar-thumb, #acctPanel::-webkit-scrollbar-thumb{background:rgba(158,182,255,0.28); border-radius:3px;}
+  .lay #lists::-webkit-scrollbar-track, #acctPanel::-webkit-scrollbar-track{background:transparent; margin:14px 0;}
+  /* Section titles pin to the top of their rail while rows scroll beneath. */
+  .lay #lists .sec-head, #acctPanel .sec-head{position:sticky; top:0; z-index:3; margin:0 -12px 10px; padding:14px 14px 10px; background:linear-gradient(180deg, rgba(13,19,40,0.97) 78%, rgba(13,19,40,0)); -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px);}
   .lay .stat{padding:13px 15px;}
 }
 .auth{position:fixed; inset:0; background:rgba(6,10,23,0.80); z-index:300; display:none; align-items:center; justify-content:center; padding:24px; -webkit-backdrop-filter:blur(22px) saturate(1.3); backdrop-filter:blur(22px) saturate(1.3);}
@@ -309,15 +378,17 @@ body{padding:env(safe-area-inset-top) 16px calc(env(safe-area-inset-bottom) + 90
 
 /* v21 feature shims */
 .overlay.kbd{align-items:flex-start; padding-top:12px;}
+/* The account sheet is top-aligned from the moment it opens, so it can never
+   shift underneath a tap (that shift was closing it mid-entry) and its Save
+   button stays above the iOS keyboard. */
+#acctOverlay{align-items:flex-start; padding-top:max(14px, env(safe-area-inset-top));}
 #remindRow{flex-wrap:wrap; gap:6px;}
 #remindRow button{padding:10px 2px; font-size:11px;}
-.field select{width:100%; background:var(--bg) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%2394a0c2' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 13px center; border:1px solid var(--line); color:var(--ink); padding:13px 36px 13px 13px; border-radius:11px; font-size:16px; -webkit-appearance:none; appearance:none;}
-.field select:focus{outline:none; border-color:var(--indigo);}
 </style>
 </head>
 <body>
 
-<div class="mx-aurora" aria-hidden="true"></div>
+<div class="mx-aurora" aria-hidden="true"><i class="mx-curtain"></i></div>
 
 
 <div class="head">
@@ -357,12 +428,14 @@ body{padding:env(safe-area-inset-top) 16px calc(env(safe-area-inset-bottom) + 90
   <div class="story" id="story">Loading…</div>
 </div>
 
+<div class="section" id="acctPanel"></div>
+
 <div class="section" id="lists"></div>
 </div>
 
 <div class="section" style="display:flex; flex-direction:column; align-items:center; gap:6px; padding-bottom:8px;">
   <button class="exp" id="menuBtn">⚙️ Account &amp; backup</button>
-  <div style="color:var(--faint); font-size:10px; font-weight:600;">v22</div>
+  <div style="color:var(--faint); font-size:10px; font-weight:600;">v23</div>
   <input type="file" accept=".json,application/json" class="hiddenfile" id="restoreInput">
 </div>
 
@@ -449,6 +522,18 @@ body{padding:env(safe-area-inset-top) 16px calc(env(safe-area-inset-bottom) + 90
     <div class="sheet-actions">
       <button class="btn" id="acctClose">Close</button>
       <button class="btn primary" id="acctSave">Add account</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="detailOverlay">
+  <div class="sheet">
+    <div class="detail-head" id="dHead"></div>
+    <div id="dBody"></div>
+    <div class="sheet-actions">
+      <button class="btn" id="dClose">Close</button>
+      <button class="btn" id="dEdit">✎ Edit</button>
+      <button class="btn primary" id="dPaid">Mark paid</button>
     </div>
   </div>
 </div>
@@ -1027,6 +1112,7 @@ body{padding:env(safe-area-inset-top) 16px calc(env(safe-area-inset-bottom) + 90
     document.getElementById("sPaid").textContent=fmtMoney(sPaidSum);
     renderHero(y,m,ent);
     renderLists(y,m,ent);
+    renderAcctPanel(y,m);
     fitRail();
   }
 
@@ -1035,9 +1121,7 @@ body{padding:env(safe-area-inset-top) 16px calc(env(safe-area-inset-bottom) + 90
     var pastDue=ent.filter(function(e){return !isPaidOcc(e.b,y,m,e.day) && isOverdueOcc(e.b,y,m,e.day);});
     var pending=ent.filter(function(e){return !isPaidOcc(e.b,y,m,e.day) && !isOverdueOcc(e.b,y,m,e.day);});
     var paid=ent.filter(function(e){return isPaidOcc(e.b,y,m,e.day);});
-    if(!ent.length && !accounts.length){ wrap.innerHTML='<div class="empty-msg">No bills this month. Tap “Add a bill” to start.</div>'; return; }
-    renderAcctSummary(wrap,y,m);
-    if(!ent.length){ var em0=document.createElement("div"); em0.className="empty-msg"; em0.textContent="No bills this month. Tap “Add a bill” to start."; wrap.appendChild(em0); return; }
+    if(!ent.length){ wrap.innerHTML='<div class="empty-msg">No bills this month. Tap “Add a bill” to start.</div>'; return; }
     if(pastDue.length) wrap.appendChild(sectionEl("Past due", pastDue, y, m, "pastdue"));
     wrap.appendChild(sectionEl("Pending", pending, y, m, "pending"));
     wrap.appendChild(sectionEl("Paid", paid, y, m, "paid"));
@@ -1049,13 +1133,16 @@ body{padding:env(safe-area-inset-top) 16px calc(env(safe-area-inset-bottom) + 90
     if(b.id>1e12){ var d=new Date(b.id); return d.getFullYear()*12+d.getMonth(); }
     return -1;
   }
-  function acctMonthTotals(acctId,y,m){
+  function acctMonthTotals(acctId,y,m,ignoreCreation){
+    // ignoreCreation=true → mirror exactly what the calendar shows for this month
+    // (used by the live panel); false → skip months before the bill was added
+    // (used by history, so past months don't get back-filled with fake data).
     var paid=0,total=0,count=0;
     var ym=y*12+m;
     bills.forEach(function(b){
       var ba=(b.acct==null)?null:b.acct;
       if(ba!==acctId) return;
-      if(billCreatedYM(b)>ym) return;
+      if(!ignoreCreation && billCreatedYM(b)>ym) return;
       occDays(b,y,m).forEach(function(d){
         total+=b.amount; count++;
         if(isPaidOcc(b,y,m,d)) paid+=b.amount;
@@ -1063,13 +1150,15 @@ body{padding:env(safe-area-inset-top) 16px calc(env(safe-area-inset-bottom) + 90
     });
     return {paid:paid,total:total,count:count};
   }
-  function acctSumCard(label,sub,t,unassigned,onTap){
-    var card=document.createElement("div"); card.className="asum"+(unassigned?" unassigned":"");
+  function acctSumCard(label,sub,t,opts){
+    opts=opts||{};
+    var card=document.createElement("div"); card.className="asum"+(opts.unassigned?" unassigned":"")+(opts.total?" total":"");
     var top=document.createElement("div"); top.className="top";
     var an=document.createElement("div"); an.className="an";
     an.appendChild(document.createTextNode(label));
     if(sub){ var sm=document.createElement("small"); sm.textContent=" "+sub; an.appendChild(sm); }
-    var av=document.createElement("div"); av.className="av"; av.textContent=fmtMoney(t.paid);
+    var av=document.createElement("div"); av.className="av";
+    av.innerHTML=fmtMoney(t.paid)+" <small>pulled</small>";
     top.appendChild(an); top.appendChild(av);
     card.appendChild(top);
     var bar=document.createElement("div"); bar.className="bar";
@@ -1077,25 +1166,46 @@ body{padding:env(safe-area-inset-top) 16px calc(env(safe-area-inset-bottom) + 90
     fill.style.width=(t.total>0?Math.round(t.paid/t.total*100):0)+"%";
     bar.appendChild(fill); card.appendChild(bar);
     var foot=document.createElement("div"); foot.className="foot";
-    var f1=document.createElement("span"); f1.textContent="pulled so far · of "+fmtMoney(t.total)+" scheduled";
-    var f2=document.createElement("span"); f2.className="hint"; f2.textContent=unassigned?"tap a bill's ✎ to set its account":"tap for history ›";
+    var f1=document.createElement("span");
+    f1.textContent="of "+fmtMoney(t.total)+" scheduled"+(opts.total?" overall":(opts.unassigned?"":" · history ›"));
+    var f2=document.createElement("span");
+    var left=t.total-t.paid;
+    if(opts.unassigned){ f2.className="hint"; f2.textContent="use ✎ on a bill to assign"; }
+    else if(left>0.004){ f2.className="lft"; f2.textContent=fmtMoney(left)+" left"; }
+    else if(t.total>0){ f2.className="lft done"; f2.textContent="✓ all pulled"; }
+    else { f2.className="hint"; f2.textContent="nothing scheduled"; }
     foot.appendChild(f1); foot.appendChild(f2);
     card.appendChild(foot);
-    if(onTap) card.onclick=onTap;
+    if(opts.onTap) card.onclick=opts.onTap;
     return card;
   }
-  function renderAcctSummary(wrap,y,m){
-    if(!accounts.length) return;
+  function renderAcctPanel(y,m){
+    var wrap=document.getElementById("acctPanel"); wrap.innerHTML="";
     var frag=document.createDocumentFragment();
     var head=document.createElement("div"); head.className="sec-head";
-    head.innerHTML='<span class="sec-title">By account · '+months[m].slice(0,3)+'</span><span class="sec-count">'+accounts.length+'</span>';
+    head.innerHTML='<span class="sec-title">My accounts · '+months[m].slice(0,3)+'</span><span class="sec-count">'+accounts.length+'</span>';
     frag.appendChild(head);
+    if(!accounts.length){
+      var cta=document.createElement("button"); cta.className="acct-cta";
+      cta.innerHTML="💳 Add your accounts<br><span style=\"font-weight:400; font-size:12px; color:var(--faint);\">Track what each bank account pays out every month</span>";
+      cta.onclick=openAcctSheet;
+      frag.appendChild(cta);
+      wrap.appendChild(frag);
+      return;
+    }
+    var totals={paid:0,total:0,count:0};
+    var cards=[];
     accounts.forEach(function(a){
-      var t=acctMonthTotals(a.id,y,m);
-      frag.appendChild(acctSumCard(a.bank+(a.nick?" · "+a.nick:""), "••"+a.last4, t, false, function(){ openAcctHist(a); }));
+      var t=acctMonthTotals(a.id,y,m,true);
+      totals.paid+=t.paid; totals.total+=t.total; totals.count+=t.count;
+      cards.push(acctSumCard(a.bank+(a.nick?" · "+a.nick:""), "••"+a.last4, t, {onTap:function(){ openAcctHist(a); }}));
     });
-    var un=acctMonthTotals(null,y,m);
-    if(un.count) frag.appendChild(acctSumCard("No account set","", un, true, function(){ openAcctHist(null); }));
+    var un=acctMonthTotals(null,y,m,true);
+    totals.paid+=un.paid; totals.total+=un.total;
+    // Overall card only when there's something to roll up (2+ accounts or unassigned bills).
+    if(accounts.length>1 || un.count) frag.appendChild(acctSumCard("All accounts","",totals,{total:true}));
+    cards.forEach(function(c){ frag.appendChild(c); });
+    if(un.count) frag.appendChild(acctSumCard("No account set","",un,{unassigned:true,onTap:function(){ openAcctHist(null); }}));
     wrap.appendChild(frag);
   }
   var histOverlay=document.getElementById("histOverlay");
@@ -1161,10 +1271,9 @@ body{padding:env(safe-area-inset-top) 16px calc(env(safe-area-inset-bottom) + 90
       else if(paidNow){ subHtml+=" · paid ✓"; }
       var al=acctLabel(b.acct);
       if(al) subHtml+=" · <span class='acct'>"+escHtml(al)+"</span>";
-      if(b.photo) subHtml+=" · tap to view bill";
       sub.innerHTML=subHtml;
       info.appendChild(nmline); info.appendChild(sub);
-      info.onclick=function(){ openViewer(b,y,m,d); };
+      info.onclick=function(){ openDetail(b,y,m,d); };
       row.appendChild(info);
       var actions=document.createElement("div"); actions.className="actions";
       var pill=document.createElement("button"); pill.className="pill"; pill.textContent=paidNow?"Paid ✓":"Mark paid";
@@ -1209,6 +1318,7 @@ body{padding:env(safe-area-inset-top) 16px calc(env(safe-area-inset-bottom) + 90
       if(al2) sh+=" · <span class='acct'>"+escHtml(al2)+"</span>";
       sub.innerHTML=sh;
       info.appendChild(nmline); info.appendChild(sub);
+      info.onclick=function(){ dayOverlay.classList.remove("open"); openDetail(b,y,m,d); };
       row.appendChild(info);
       var actions=document.createElement("div"); actions.className="actions";
       var pill=document.createElement("button"); pill.className="pill"; pill.textContent=paidNow?"Paid ✓":"Mark paid";
@@ -1245,6 +1355,78 @@ body{padding:env(safe-area-inset-top) 16px calc(env(safe-area-inset-bottom) + 90
   function closeViewer(){ viewer.classList.remove("open"); }
   document.getElementById("vClose").onclick=closeViewer;
   document.getElementById("vBody").onclick=function(e){ if(e.target.id==="vBody") closeViewer(); };
+
+  /* ---------- bill details sheet ---------- */
+  var detailOverlay=document.getElementById("detailOverlay");
+  var detailCtx=null;
+  function closeDetail(){ detailOverlay.classList.remove("open"); detailCtx=null; }
+  function openDetail(b,y,m,d){ detailCtx={id:b.id, y:y, m:m, d:d}; renderDetail(); detailOverlay.classList.add("open"); }
+  function renderDetail(){
+    if(!detailCtx) return;
+    var b=null; bills.forEach(function(x){ if(x.id===detailCtx.id) b=x; });
+    if(!b){ closeDetail(); return; }
+    var y=detailCtx.y, m=detailCtx.m, d=detailCtx.d;
+    var paidNow=isPaidOcc(b,y,m,d), overdue=isOverdueOcc(b,y,m,d);
+    var H=document.getElementById("dHead"); H.innerHTML="";
+    H.appendChild(makeIcon(b,false));
+    var tx=document.createElement("div"); tx.className="dh-tx";
+    var nm=document.createElement("div"); nm.className="dh-name"; nm.textContent=b.name;
+    var st=document.createElement("div"); st.className="dh-status";
+    var stHtml="Due "+months[m]+" "+d;
+    if(paidNow){ stHtml+=" · <span class='ok'>paid ✓</span>"; }
+    else if(overdue){ var late=daysPastDueOcc(y,m,d); stHtml+=" · <span class='warn'>"+late+(late===1?" day":" days")+" past due</span>"; }
+    else {
+      var t=new Date();
+      if(t.getFullYear()===y&&t.getMonth()===m){
+        var inD=d-t.getDate();
+        stHtml+=" · "+(inD===0?"due today":(inD===1?"due tomorrow":"due in "+inD+" days"));
+      }
+    }
+    st.innerHTML=stHtml;
+    tx.appendChild(nm); tx.appendChild(st); H.appendChild(tx);
+    var amt=document.createElement("div"); amt.className="dh-amt"; amt.textContent=fmtMoney(b.amount); H.appendChild(amt);
+    var B=document.getElementById("dBody"); B.innerHTML="";
+    var rows=document.createElement("div"); rows.className="drows";
+    function drow(l,v,cls){
+      var r=document.createElement("div"); r.className="drow";
+      var dl=document.createElement("span"); dl.className="dl"; dl.textContent=l;
+      var dv=document.createElement("span"); dv.className="dv"+(cls?" "+cls:""); dv.textContent=v;
+      r.appendChild(dl); r.appendChild(dv); rows.appendChild(r);
+    }
+    drow("Status", paidNow?"Paid ✓":(overdue?"Past due":"Pending"), paidNow?"ok":(overdue?"warn":""));
+    var al=acctLabelFull(b.acct);
+    drow("Pays from", al||"No account set", al?"":"faint");
+    drow("Repeats", b.recur==="monthly"?"Every month":(b.recur==="biweekly"?"Every 2 weeks":"One time"));
+    var rd=(typeof b.remindDays==="number")?b.remindDays:2;
+    drow("Reminder", rd===0?"Due day · 9 AM":(rd===1?"1 day before · 9 AM":rd+" days before · 9 AM"));
+    B.appendChild(rows);
+    var ph=document.createElement("div"); ph.className="dphoto";
+    if(b.photo){
+      var img=document.createElement("img"); img.src=b.photo; img.alt=b.name+" bill";
+      img.onclick=function(){ openViewer(b,y,m,d); };
+      ph.appendChild(img);
+      var cap=document.createElement("div"); cap.className="dcap"; cap.textContent="Tap the photo to see it full screen";
+      ph.appendChild(cap);
+    } else {
+      var addp=document.createElement("button"); addp.className="dphoto-add"; addp.textContent="📷 Add a photo of this bill";
+      addp.onclick=function(){ closeDetail(); openEdit(b); };
+      ph.appendChild(addp);
+    }
+    B.appendChild(ph);
+    document.getElementById("dPaid").textContent=paidNow?"Paid ✓ · undo":"Mark paid";
+  }
+  document.getElementById("dClose").onclick=closeDetail;
+  document.getElementById("dEdit").onclick=function(){
+    if(!detailCtx) return;
+    var b=null; bills.forEach(function(x){ if(x.id===detailCtx.id) b=x; });
+    closeDetail(); if(b) openEdit(b);
+  };
+  document.getElementById("dPaid").onclick=function(){
+    if(!detailCtx) return;
+    toggleOcc(detailCtx.id, detailCtx.y, detailCtx.m, detailCtx.d);
+    renderDetail();
+  };
+  detailOverlay.onclick=function(e){ if(e.target===detailOverlay) closeDetail(); };
 
   function toggle(id){
     var mk=monthKey(view);
@@ -1429,7 +1611,7 @@ body{padding:env(safe-area-inset-top) 16px calc(env(safe-area-inset-bottom) + 90
   }
   function openAcctSheet(){ lastAddedAcctId=null; clearAcctForm(); renderAcctList(); acctOverlay.classList.add("open"); }
   function closeAcctSheet(){
-    acctOverlay.classList.remove("open"); acctOverlay.classList.remove("kbd");
+    acctOverlay.classList.remove("open");
     if(acctReturnToBill){
       acctReturnToBill=false;
       // Newly added account wins; otherwise restore whatever the bill had before.
@@ -1456,18 +1638,13 @@ body{padding:env(safe-area-inset-top) 16px calc(env(safe-area-inset-bottom) + 90
   document.getElementById("acctClose").onclick=closeAcctSheet;
   acctOverlay.onclick=function(e){
     if(e.target!==acctOverlay) return;
-    // Don't discard typed input when a backdrop tap was just dismissing the keyboard.
+    // Never close while the user is typing (or has typed) — a tap that lands on the
+    // backdrop right after focusing an input must not throw their work away.
+    var ae=document.activeElement;
+    if(ae && ae.tagName==="INPUT" && acctOverlay.contains(ae)) return;
     if(document.getElementById("a_bank").value||document.getElementById("a_nick").value||document.getElementById("a_last4").value) return;
     closeAcctSheet();
   };
-  // Keep the form above the iOS keyboard: top-align the sheet while an input has focus.
-  acctOverlay.addEventListener("focusin",function(e){
-    if(e.target && e.target.tagName==="INPUT"){
-      acctOverlay.classList.add("kbd");
-      try{e.target.scrollIntoView({block:"center"});}catch(err){}
-    }
-  });
-  acctOverlay.addEventListener("focusout",function(){ acctOverlay.classList.remove("kbd"); });
   document.getElementById("mAccts").onclick=function(){ closeMenu(); openAcctSheet(); };
 
   /* ---------- reminders ---------- */
@@ -1585,15 +1762,11 @@ body{padding:env(safe-area-inset-top) 16px calc(env(safe-area-inset-bottom) + 90
   };
 
   function fitRail(){
+    // Desktop sizing is pure CSS grid now (one fixed screen, rails scroll internally);
+    // just make sure no stale inline heights linger from older versions.
     var L=document.getElementById("lists");
     var G=document.getElementById("grid");
-    if(window.innerWidth<960){ L.style.height=""; L.style.maxHeight=""; G.style.height=""; return; }
-    var gtop=G.getBoundingClientRect().top;
-    G.style.height=Math.max(420, window.innerHeight - gtop - 16)+"px";
-    var gb=G.getBoundingClientRect().bottom;
-    var ltop=L.getBoundingClientRect().top;
-    var h=Math.max(240, Math.min(gb, window.innerHeight-16) - ltop);
-    L.style.height=h+"px"; L.style.maxHeight=h+"px";
+    L.style.height=""; L.style.maxHeight=""; G.style.height="";
   }
   window.addEventListener("resize", fitRail);
 
