@@ -260,7 +260,16 @@ body{padding:env(safe-area-inset-top) 16px calc(env(safe-area-inset-bottom) + 90
   -webkit-backdrop-filter:blur(10px) saturate(1.3); backdrop-filter:blur(10px) saturate(1.3);
   box-shadow:0 10px 26px -18px rgba(4,8,24,0.9), var(--sheen);}
 .asum:active{background:var(--surface2);}
-.asum .top{display:flex; justify-content:space-between; align-items:baseline; gap:10px; margin-bottom:7px;}
+.asum .top{display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:7px;}
+.asum .an{flex:1;}
+.astats{display:flex; gap:6px; margin-top:9px;}
+.astat{flex:1; min-width:0;}
+.astat .k{font-size:10px; text-transform:uppercase; letter-spacing:0.2px; color:var(--faint); font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.astat .v{font-size:13px; font-weight:800; letter-spacing:-0.2px; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.astat .v.green{color:var(--green);}
+.astat .v.gold{color:var(--gold); text-shadow:0 0 14px rgba(255,206,107,0.30);}
+.astat .v.faint{color:var(--faint);}
+.asum .hist-link{font-size:11px; color:var(--faint); margin-top:9px;}
 .asum .an{font-size:14px; font-weight:700; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
 .asum .an small{color:var(--muted); font-weight:600;}
 .asum .av{font-size:17px; font-weight:800; flex-shrink:0;}
@@ -451,7 +460,7 @@ body{padding:env(safe-area-inset-top) 16px calc(env(safe-area-inset-bottom) + 90
 
 <div class="section" style="display:flex; flex-direction:column; align-items:center; gap:6px; padding-bottom:8px;">
   <button class="exp" id="menuBtn">⚙️ Account &amp; backup</button>
-  <div style="color:var(--faint); font-size:10px; font-weight:600;">v28</div>
+  <div style="color:var(--faint); font-size:10px; font-weight:600;">v29</div>
   <input type="file" accept=".json,application/json" class="hiddenfile" id="restoreInput">
 </div>
 
@@ -1178,42 +1187,40 @@ body{padding:env(safe-area-inset-top) 16px calc(env(safe-area-inset-bottom) + 90
   }
   function acctSumCard(label,sub,t,opts){
     opts=opts||{};
+    var total=t.total, paid=t.paid, left=Math.max(0, total-paid);
     var card=document.createElement("div"); card.className="asum"+(opts.unassigned?" unassigned":"")+(opts.total?" total":"");
     var top=document.createElement("div"); top.className="top";
     var an=document.createElement("div"); an.className="an";
     if(opts.marker) an.appendChild(makeLnkMark(opts.marker==="ok"));
     an.appendChild(document.createTextNode(label));
     if(sub){ var sm=document.createElement("small"); sm.textContent=" "+sub; an.appendChild(sm); }
-    var av=document.createElement("div"); av.className="av";
-    av.innerHTML=fmtMoney(t.paid)+" <small>pulled</small>";
     top.appendChild(an);
     if(opts.onDelete){
-      var avw=document.createElement("div"); avw.className="av-wrap";
-      avw.appendChild(av);
       var tb=document.createElement("button"); tb.className="acct-del"; tb.textContent="🗑"; tb.setAttribute("aria-label","Delete this account"); tb.title="Delete this account";
       tb.onclick=function(ev){ ev.stopPropagation(); opts.onDelete(); };
-      avw.appendChild(tb);
-      top.appendChild(avw);
-    } else {
-      top.appendChild(av);
+      top.appendChild(tb);
     }
     card.appendChild(top);
     var bar=document.createElement("div"); bar.className="bar";
-    var fill=document.createElement("i");
-    fill.style.width=(t.total>0?Math.round(t.paid/t.total*100):0)+"%";
+    var fill=document.createElement("i"); fill.style.width=(total>0?Math.round(paid/total*100):0)+"%";
     bar.appendChild(fill); card.appendChild(bar);
-    var foot=document.createElement("div"); foot.className="foot";
-    var f1=document.createElement("span");
-    f1.textContent="of "+fmtMoney(t.total)+" scheduled"+(opts.total?" overall":(opts.unassigned?"":" · history ›"));
-    var f2=document.createElement("span");
-    var left=t.total-t.paid;
-    if(opts.unassigned){ f2.className="hint"; f2.textContent="use ✎ on a bill to assign"; }
-    else if(left>0.004){ f2.className="lft"; f2.textContent=fmtMoney(left)+" left"; }
-    else if(t.total>0){ f2.className="lft done"; f2.textContent="✓ all pulled"; }
-    else { f2.className="hint"; f2.textContent="nothing scheduled"; }
-    foot.appendChild(f1); foot.appendChild(f2);
-    card.appendChild(foot);
-    if(opts.onTap) card.onclick=opts.onTap;
+    // Three plain numbers: what's coming out, what's been paid, what's still to pay.
+    var stats=document.createElement("div"); stats.className="astats";
+    function stat(k,v,cls){
+      var s=document.createElement("div"); s.className="astat";
+      var kk=document.createElement("div"); kk.className="k"; kk.textContent=k;
+      var vv=document.createElement("div"); vv.className="v"+(cls?" "+cls:""); vv.textContent=v;
+      s.appendChild(kk); s.appendChild(vv); return s;
+    }
+    stats.appendChild(stat("Coming out", fmtMoney(total)));
+    stats.appendChild(stat("Paid", fmtMoney(paid), paid>0.004?"green":"faint"));
+    stats.appendChild(stat("Still to pay", fmtMoney(left), left>0.004?"gold":"faint"));
+    card.appendChild(stats);
+    if(opts.onTap){
+      var hl=document.createElement("div"); hl.className="hist-link"; hl.textContent="Tap for month-by-month history ›";
+      card.appendChild(hl);
+      card.onclick=opts.onTap;
+    }
     return card;
   }
   function renderAcctPanel(y,m){
