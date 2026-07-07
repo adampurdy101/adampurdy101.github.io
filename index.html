@@ -264,12 +264,17 @@ body{padding:env(safe-area-inset-top) 16px calc(env(safe-area-inset-bottom) + 90
 .asum .an{flex:1;}
 .astats{display:flex; gap:6px; margin-top:9px;}
 .astat{flex:1; min-width:0;}
-.astat .k{font-size:10px; text-transform:uppercase; letter-spacing:0.2px; color:var(--faint); font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.astat .k{font-size:9px; text-transform:uppercase; letter-spacing:0; color:var(--faint); font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
 .astat .v{font-size:13px; font-weight:800; letter-spacing:-0.2px; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
 .astat .v.green{color:var(--green);}
 .astat .v.gold{color:var(--gold); text-shadow:0 0 14px rgba(255,206,107,0.30);}
 .astat .v.faint{color:var(--faint);}
 .asum .hist-link{font-size:11px; color:var(--faint); margin-top:9px;}
+/* pay-period splits (renditions A/B/C) */
+.half{margin-top:11px;}
+.half-h{font-size:11px; color:var(--muted); margin-bottom:5px;}
+.half-h b{color:var(--ink); font-weight:700;}
+.half-h span{color:var(--faint); font-size:10px;}
 .asum .an{font-size:14px; font-weight:700; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
 .asum .an small{color:var(--muted); font-weight:600;}
 .asum .av{font-size:17px; font-weight:800; flex-shrink:0;}
@@ -460,7 +465,7 @@ body{padding:env(safe-area-inset-top) 16px calc(env(safe-area-inset-bottom) + 90
 
 <div class="section" style="display:flex; flex-direction:column; align-items:center; gap:6px; padding-bottom:8px;">
   <button class="exp" id="menuBtn">⚙️ Account &amp; backup</button>
-  <div style="color:var(--faint); font-size:10px; font-weight:600;">v29</div>
+  <div style="color:var(--faint); font-size:10px; font-weight:600;">v30</div>
   <input type="file" accept=".json,application/json" class="hiddenfile" id="restoreInput">
 </div>
 
@@ -1185,9 +1190,23 @@ body{padding:env(safe-area-inset-top) 16px calc(env(safe-area-inset-bottom) + 90
     });
     return {paid:paid,total:total,count:count};
   }
-  function acctSumCard(label,sub,t,opts){
-    opts=opts||{};
-    var total=t.total, paid=t.paid, left=Math.max(0, total-paid);
+  // Split a month's bills for one account into two pay-period buckets:
+  // first  = due 1st–14th  (funded by the 1st paycheck)
+  // second = due 15th–end  (funded by the 15th paycheck)
+  function acctHalfTotals(acctId,y,m){
+    var res={first:{total:0,paid:0,count:0}, second:{total:0,paid:0,count:0}};
+    bills.forEach(function(b){
+      var ba=(b.acct==null)?null:b.acct;
+      if(ba!==acctId) return;
+      occDays(b,y,m).forEach(function(d){
+        var bk=d<15?res.first:res.second;
+        bk.total+=b.amount; bk.count++;
+        if(isPaidOcc(b,y,m,d)) bk.paid+=b.amount;
+      });
+    });
+    return res;
+  }
+  function acctCardTop(label,sub,opts){
     var card=document.createElement("div"); card.className="asum"+(opts.unassigned?" unassigned":"")+(opts.total?" total":"");
     var top=document.createElement("div"); top.className="top";
     var an=document.createElement("div"); an.className="an";
@@ -1201,27 +1220,35 @@ body{padding:env(safe-area-inset-top) 16px calc(env(safe-area-inset-bottom) + 90
       top.appendChild(tb);
     }
     card.appendChild(top);
-    var bar=document.createElement("div"); bar.className="bar";
-    var fill=document.createElement("i"); fill.style.width=(total>0?Math.round(paid/total*100):0)+"%";
-    bar.appendChild(fill); card.appendChild(bar);
-    // Three plain numbers: what's coming out, what's been paid, what's still to pay.
-    var stats=document.createElement("div"); stats.className="astats";
-    function stat(k,v,cls){
-      var s=document.createElement("div"); s.className="astat";
-      var kk=document.createElement("div"); kk.className="k"; kk.textContent=k;
-      var vv=document.createElement("div"); vv.className="v"+(cls?" "+cls:""); vv.textContent=v;
-      s.appendChild(kk); s.appendChild(vv); return s;
-    }
-    stats.appendChild(stat("Coming out", fmtMoney(total)));
-    stats.appendChild(stat("Paid", fmtMoney(paid), paid>0.004?"green":"faint"));
-    stats.appendChild(stat("Still to pay", fmtMoney(left), left>0.004?"gold":"faint"));
-    card.appendChild(stats);
-    if(opts.onTap){
-      var hl=document.createElement("div"); hl.className="hist-link"; hl.textContent="Tap for month-by-month history ›";
-      card.appendChild(hl);
-      card.onclick=opts.onTap;
-    }
     return card;
+  }
+  function acctCardFinish(card,opts){
+    if(opts.onTap){ var hl=document.createElement("div"); hl.className="hist-link"; hl.textContent="Tap for month-by-month history ›"; card.appendChild(hl); card.onclick=opts.onTap; }
+    return card;
+  }
+  function miniBar(pct){ var bar=document.createElement("div"); bar.className="bar"; var fill=document.createElement("i"); fill.style.width=pct+"%"; bar.appendChild(fill); return bar; }
+  function statEl(k,v,cls){ var s=document.createElement("div"); s.className="astat"; var kk=document.createElement("div"); kk.className="k"; kk.textContent=k; var vv=document.createElement("div"); vv.className="v"+(cls?" "+cls:""); vv.textContent=v; s.appendChild(kk); s.appendChild(vv); return s; }
+
+  // Rendition A — split table: each paycheck gets a labeled block of 3 numbers
+  function acctCardA(label,sub,h,opts){
+    var card=acctCardTop(label,sub,opts);
+    [["1st paycheck","due 1st–14th",h.first],["15th paycheck","due 15th–end",h.second]].forEach(function(seg){
+      var d=seg[2], left=Math.max(0,d.total-d.paid);
+      var half=document.createElement("div"); half.className="half";
+      var hh=document.createElement("div"); hh.className="half-h"; hh.innerHTML="💵 <b>"+seg[0]+"</b> <span>"+seg[1]+"</span>";
+      half.appendChild(hh);
+      half.appendChild(miniBar(d.total>0?Math.round(d.paid/d.total*100):0));
+      var stats=document.createElement("div"); stats.className="astats";
+      stats.appendChild(statEl("Coming out", fmtMoney(d.total)));
+      stats.appendChild(statEl("Paid", fmtMoney(d.paid), d.paid>0.004?"green":"faint"));
+      stats.appendChild(statEl("Still to pay", fmtMoney(left), left>0.004?"gold":"faint"));
+      half.appendChild(stats);
+      card.appendChild(half);
+    });
+    return acctCardFinish(card,opts);
+  }
+  function acctSumCard(label,sub,h,opts){
+    return acctCardA(label,sub,h||{first:{total:0,paid:0,count:0},second:{total:0,paid:0,count:0}}, opts||{});
   }
   function renderAcctPanel(y,m){
     var wrap=document.getElementById("acctPanel"); wrap.innerHTML="";
@@ -1240,19 +1267,21 @@ body{padding:env(safe-area-inset-top) 16px calc(env(safe-area-inset-bottom) + 90
       wrap.appendChild(frag);
       return;
     }
-    var totals={paid:0,total:0,count:0};
+    function addHalf(dst,src){ dst.total+=src.total; dst.paid+=src.paid; dst.count+=src.count; }
+    var allH={first:{total:0,paid:0,count:0}, second:{total:0,paid:0,count:0}};
     var cards=[];
     accounts.forEach(function(a){
-      var t=acctMonthTotals(a.id,y,m,true);
-      totals.paid+=t.paid; totals.total+=t.total; totals.count+=t.count;
-      cards.push(acctSumCard(a.bank+(a.nick?" · "+a.nick:""), "••"+a.last4, t, {marker:"ok", onTap:function(){ openAcctHist(a); }, onDelete:function(){ deleteAccount(a); }}));
+      var h=acctHalfTotals(a.id,y,m);
+      addHalf(allH.first,h.first); addHalf(allH.second,h.second);
+      cards.push(acctSumCard(a.bank+(a.nick?" · "+a.nick:""), "••"+a.last4, h, {marker:"ok", onTap:function(){ openAcctHist(a); }, onDelete:function(){ deleteAccount(a); }}));
     });
-    var un=acctMonthTotals(null,y,m,true);
-    totals.paid+=un.paid; totals.total+=un.total;
+    var unH=acctHalfTotals(null,y,m);
+    addHalf(allH.first,unH.first); addHalf(allH.second,unH.second);
+    var unCount=unH.first.count+unH.second.count;
     // Overall card only when there's something to roll up (2+ accounts or unassigned bills).
-    if(accounts.length>1 || un.count) frag.appendChild(acctSumCard("All accounts","",totals,{total:true, marker:"ok"}));
+    if(accounts.length>1 || unCount) frag.appendChild(acctSumCard("All accounts","",allH,{total:true, marker:"ok"}));
     cards.forEach(function(c){ frag.appendChild(c); });
-    if(un.count) frag.appendChild(acctSumCard("No account set","",un,{unassigned:true, marker:"no", onTap:function(){ openAcctHist(null); }}));
+    if(unCount) frag.appendChild(acctSumCard("No account set","",unH,{unassigned:true, marker:"no", onTap:function(){ openAcctHist(null); }}));
     wrap.appendChild(frag);
   }
   var histOverlay=document.getElementById("histOverlay");
