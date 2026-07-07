@@ -252,7 +252,9 @@ body{padding:env(safe-area-inset-top) 16px calc(env(safe-area-inset-bottom) + 90
 .acct-row .at{flex:1; min-width:0;}
 .acct-row .at b{font-size:14px; display:block;}
 .acct-row .at small{font-size:12px; color:var(--muted);}
-.acct-row button{background:none; border:none; color:var(--faint); font-size:16px; cursor:pointer; padding:6px;}
+.acct-row button{background:rgba(158,182,255,0.06); border:1px solid var(--line); color:var(--muted); font-size:13px; font-weight:700; cursor:pointer; padding:8px 11px; border-radius:9px; white-space:nowrap; flex-shrink:0;}
+.acct-row button.del-acct{color:var(--red); border-color:rgba(255,138,128,0.5); background:rgba(255,138,128,0.10);}
+.acct-row button.del-acct:active{background:rgba(255,138,128,0.22);}
 .linkbox{background:var(--well); border:1px solid var(--line); border-radius:11px; padding:12px; font-size:12px; color:var(--muted); word-break:break-all; margin:10px 0; line-height:1.5; font-family:ui-monospace,SFMono-Regular,Menlo,monospace; box-shadow:var(--sheen);}
 .asum{background:var(--surface); border:1px solid var(--edge); border-radius:var(--radius-sm); padding:12px; margin-bottom:8px; cursor:pointer;
   -webkit-backdrop-filter:blur(10px) saturate(1.3); backdrop-filter:blur(10px) saturate(1.3);
@@ -444,7 +446,7 @@ body{padding:env(safe-area-inset-top) 16px calc(env(safe-area-inset-bottom) + 90
 
 <div class="section" style="display:flex; flex-direction:column; align-items:center; gap:6px; padding-bottom:8px;">
   <button class="exp" id="menuBtn">⚙️ Account &amp; backup</button>
-  <div style="color:var(--faint); font-size:10px; font-weight:600;">v25</div>
+  <div style="color:var(--faint); font-size:10px; font-weight:600;">v26</div>
   <input type="file" accept=".json,application/json" class="hiddenfile" id="restoreInput">
 </div>
 
@@ -1511,7 +1513,7 @@ body{padding:env(safe-area-inset-top) 16px calc(env(safe-area-inset-bottom) + 90
       if(selectedId===a.id) op.selected=true;
       s.appendChild(op);
     });
-    var add=document.createElement("option"); add.value="__add"; add.textContent="＋ Add a new account…"; s.appendChild(add);
+    var add=document.createElement("option"); add.value="__add"; add.textContent="＋ Add or manage accounts…"; s.appendChild(add);
     acctPrevVal=(selectedId!=null)?String(selectedId):"";
   }
   var acctPrevVal="";
@@ -1606,7 +1608,7 @@ body{padding:env(safe-area-inset-top) 16px calc(env(safe-area-inset-bottom) + 90
       var b=document.createElement("b"); b.textContent=a.bank+(a.nick?" · "+a.nick:"");
       var s=document.createElement("small"); s.textContent="••••"+a.last4;
       at.appendChild(b); at.appendChild(s); row.appendChild(at);
-      var ed=document.createElement("button"); ed.textContent="✎"; ed.setAttribute("aria-label","Edit account");
+      var ed=document.createElement("button"); ed.textContent="✎ Edit"; ed.setAttribute("aria-label","Edit account");
       ed.onclick=function(){
         editAcctId=a.id;
         document.getElementById("a_bank").value=a.bank;
@@ -1615,7 +1617,7 @@ body{padding:env(safe-area-inset-top) 16px calc(env(safe-area-inset-bottom) + 90
         document.getElementById("acctSave").textContent="Save changes";
       };
       row.appendChild(ed);
-      var del=document.createElement("button"); del.textContent="🗑"; del.setAttribute("aria-label","Delete account");
+      var del=document.createElement("button"); del.className="del-acct"; del.textContent="🗑 Delete"; del.setAttribute("aria-label","Delete account");
       del.onclick=function(){
         var used=bills.filter(function(x){return x.acct===a.id;}).length;
         var msg="Delete "+a.bank+" ••"+a.last4+"?";
