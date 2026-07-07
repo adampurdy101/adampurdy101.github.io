@@ -1,4 +1,4 @@
-var CACHE = "billcal-v20";
+var CACHE = "billcal-v22";
 var SHELL = ["./", "./index.html", "./icon.svg", "./manifest.webmanifest"];
 
 self.addEventListener("install", function (e) {

@@ -6,17 +6,25 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Bills">
-<meta name="theme-color" content="#0e1320">
+<meta name="theme-color" content="#060a17">
 <title>Bill Calendar</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' rx='40' fill='%2314110f'/%3E%3Crect x='38' y='44' width='104' height='98' rx='14' fill='none' stroke='%23e8b84b' stroke-width='8'/%3E%3Cline x1='38' y1='72' x2='142' y2='72' stroke='%23e8b84b' stroke-width='8'/%3E%3Ccircle cx='66' cy='100' r='8' fill='%23e8b84b'/%3E%3Ccircle cx='90' cy='100' r='8' fill='%235dcaa5'/%3E%3Ccircle cx='114' cy='100' r='8' fill='%23e8b84b'/%3E%3C/svg%3E">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
+/* ============================================================
+   MIDNIGHT AURORA — visual skin only.
+   Deep-space navy, slow-drifting aurora ribbons, frosted glass.
+   All ids, classes, layout metrics and breakpoints unchanged.
+   ============================================================ */
 :root{
-  --bg:#0e1320; --surface:#171d2e; --surface2:#1f2740; --line:#2a3350;
-  --ink:#eef1fa; --muted:#94a0c2; --faint:#5d6886;
-  --gold:#ffc861; --green:#3ddba6; --red:#ff7a70; --blue:#5fb2ff; --indigo:#7c8cff;
+  --bg:#060a17; --surface:rgba(23,31,60,0.60); --surface2:#232d56; --line:rgba(158,182,255,0.16);
+  --ink:#f1f4ff; --muted:#a6b3db; --faint:#7d8ab5;
+  --gold:#ffce6b; --green:#45e6b0; --red:#ff8a80; --blue:#6fbaff; --indigo:#8f9eff;
   --radius:16px; --radius-sm:10px;
+  --edge:rgba(170,193,255,0.26);
+  --well:rgba(9,13,28,0.72);
+  --sheen:inset 0 1px 0 rgba(255,255,255,0.07);
 }
 *{margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
 html,body{background:var(--bg); color:var(--ink); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; overflow-x:hidden; max-width:100vw;}
@@ -24,50 +32,109 @@ body{padding:env(safe-area-inset-top) 16px calc(env(safe-area-inset-bottom) + 90
 @media (min-width:700px){
   body{max-width:780px; padding-left:24px; padding-right:24px;}
 }
+
+/* ---- decorative aurora backdrop (JS never touches this) ---- */
+.mx-aurora{position:fixed; inset:0; z-index:-1; pointer-events:none; overflow:hidden;
+  background:
+    radial-gradient(1.6px 1.6px at 11% 22%, rgba(255,255,255,0.55) 50%, transparent 51%),
+    radial-gradient(1.2px 1.2px at 27% 8%,  rgba(255,255,255,0.38) 50%, transparent 51%),
+    radial-gradient(1.8px 1.8px at 41% 31%, rgba(214,226,255,0.50) 50%, transparent 51%),
+    radial-gradient(1.2px 1.2px at 58% 12%, rgba(255,255,255,0.42) 50%, transparent 51%),
+    radial-gradient(1.5px 1.5px at 73% 26%, rgba(214,226,255,0.45) 50%, transparent 51%),
+    radial-gradient(1.2px 1.2px at 88% 9%,  rgba(255,255,255,0.40) 50%, transparent 51%),
+    radial-gradient(1.6px 1.6px at 17% 64%, rgba(214,226,255,0.34) 50%, transparent 51%),
+    radial-gradient(1.2px 1.2px at 34% 84%, rgba(255,255,255,0.30) 50%, transparent 51%),
+    radial-gradient(1.7px 1.7px at 66% 71%, rgba(214,226,255,0.36) 50%, transparent 51%),
+    radial-gradient(1.2px 1.2px at 83% 58%, rgba(255,255,255,0.32) 50%, transparent 51%),
+    radial-gradient(1.4px 1.4px at 93% 82%, rgba(214,226,255,0.30) 50%, transparent 51%),
+    radial-gradient(120% 85% at 50% -10%, #0c1330 0%, #080d20 45%, var(--bg) 100%);
+}
+.mx-aurora::before,
+.mx-aurora::after{content:""; position:absolute; inset:-32%; will-change:transform;}
+.mx-aurora::before{
+  background:conic-gradient(from 212deg at 52% 44%,
+    transparent 0deg,
+    rgba(64,224,182,0.11) 42deg,
+    rgba(96,140,255,0.14) 96deg,
+    rgba(64,224,182,0.05) 140deg,
+    transparent 180deg,
+    rgba(150,96,255,0.10) 236deg,
+    rgba(96,140,255,0.05) 288deg,
+    transparent 330deg);
+  filter:blur(60px);
+}
+.mx-aurora::after{
+  background:
+    radial-gradient(34% 26% at 28% 34%, rgba(84,158,255,0.15), transparent 70%),
+    radial-gradient(28% 24% at 71% 26%, rgba(64,224,190,0.12), transparent 70%),
+    radial-gradient(34% 30% at 58% 76%, rgba(146,96,255,0.12), transparent 70%),
+    radial-gradient(26% 22% at 14% 78%, rgba(84,158,255,0.09), transparent 70%);
+  filter:blur(72px);
+}
+@media (prefers-reduced-motion: no-preference){
+  .mx-aurora::before{animation:mxDriftA 130s ease-in-out infinite alternate;}
+  .mx-aurora::after{animation:mxDriftB 170s ease-in-out infinite alternate-reverse;}
+  .hero:after{animation:mxBreathe 16s ease-in-out infinite alternate;}
+}
+@keyframes mxDriftA{from{transform:translate3d(-3.5%,-2.5%,0) rotate(0.001deg) scale(1);} to{transform:translate3d(3.5%,2%,0) rotate(0.001deg) scale(1.10);}}
+@keyframes mxDriftB{from{transform:translate3d(3%,2%,0) scale(1.06);} to{transform:translate3d(-3%,-2.5%,0) scale(1);}}
+@keyframes mxBreathe{from{opacity:0.55; transform:scale(1);} to{opacity:1; transform:scale(1.10);}}
+
 .head{display:flex; align-items:center; justify-content:space-between; padding:18px 2px 14px; gap:8px;}
-.title{font-size:15px; font-weight:600; letter-spacing:0.3px; color:var(--indigo); text-transform:uppercase;}
+.title{font-size:15px; font-weight:600; letter-spacing:0.3px; color:var(--indigo); text-transform:uppercase; text-shadow:0 0 18px rgba(143,158,255,0.45);}
 .title span{color:var(--muted); font-weight:500; text-transform:none; letter-spacing:0;}
 .headbtns{display:flex; gap:6px;}
 .nav{display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;}
-.nav button{background:var(--surface); border:1px solid var(--line); color:var(--ink); width:40px; height:40px; border-radius:12px; font-size:20px; line-height:1; cursor:pointer;}
+.nav button{background:var(--surface); border:1px solid var(--edge); color:var(--ink); width:40px; height:40px; border-radius:12px; font-size:20px; line-height:1; cursor:pointer; -webkit-backdrop-filter:blur(10px) saturate(1.3); backdrop-filter:blur(10px) saturate(1.3); box-shadow:var(--sheen);}
 .nav button:active{background:var(--surface2);}
-.month{font-size:21px; font-weight:600;}
-.hero{background:linear-gradient(135deg,#1d2547 0%, #14323a 100%); border:1px solid var(--line); border-radius:22px; padding:20px; margin-bottom:16px; position:relative; overflow:hidden;}
-.hero:before{content:""; position:absolute; top:-60px; right:-60px; width:180px; height:180px; border-radius:50%; background:radial-gradient(circle, rgba(124,140,255,0.25), transparent 70%);}
+.month{font-size:21px; font-weight:600; text-shadow:0 0 26px rgba(143,158,255,0.35);}
+
+/* ---- hero: the aurora heart of the app ---- */
+.hero{background:linear-gradient(150deg, rgba(41,52,102,0.72) 0%, rgba(22,50,72,0.62) 52%, rgba(35,29,76,0.70) 100%); border:1px solid rgba(172,196,255,0.30); border-radius:22px; padding:20px; margin-bottom:16px; position:relative; overflow:hidden; isolation:isolate;
+  -webkit-backdrop-filter:blur(16px) saturate(1.5); backdrop-filter:blur(16px) saturate(1.5);
+  box-shadow:0 24px 60px -28px rgba(4,8,24,0.95), 0 0 44px -16px rgba(124,140,255,0.40), inset 0 1px 0 rgba(255,255,255,0.10);}
+.hero:before{content:""; position:absolute; top:-60px; right:-60px; width:200px; height:200px; border-radius:50%; z-index:-1; background:radial-gradient(circle, rgba(143,158,255,0.34), rgba(111,186,255,0.10) 58%, transparent 72%); filter:blur(4px);}
+.hero:after{content:""; position:absolute; bottom:-90px; left:-50px; width:250px; height:250px; border-radius:50%; z-index:-1; pointer-events:none; background:radial-gradient(circle, rgba(69,230,176,0.20), rgba(69,230,176,0.05) 55%, transparent 72%); filter:blur(6px);}
 .hero .lbl{font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:0.6px; font-weight:700; position:relative;}
-.hero .big{font-size:36px; font-weight:800; letter-spacing:-1px; margin:2px 0 2px; position:relative;}
-.hero .big small{font-size:16px; font-weight:600; color:var(--muted); letter-spacing:0;}
+.hero .big{font-size:36px; font-weight:800; letter-spacing:-1px; margin:2px 0 2px; position:relative; text-shadow:0 2px 28px rgba(130,160,255,0.45);}
+.hero .big small{font-size:16px; font-weight:600; color:var(--muted); letter-spacing:0; text-shadow:none;}
 .hero .sub{font-size:13px; color:var(--muted); margin-bottom:12px; position:relative;}
-.bar{height:8px; border-radius:6px; background:rgba(255,255,255,0.09); overflow:hidden; margin-bottom:12px; position:relative;}
-.bar i{display:block; height:100%; border-radius:6px; background:linear-gradient(90deg, var(--green), #7be3c6); width:0%; transition:width .6s ease;}
+.bar{height:8px; border-radius:6px; background:rgba(158,182,255,0.13); overflow:hidden; margin-bottom:12px; position:relative; box-shadow:inset 0 1px 2px rgba(0,0,0,0.35);}
+.bar i{display:block; height:100%; border-radius:6px; background:linear-gradient(90deg, var(--green), #6ff0d2 55%, #9db4ff); width:0%; transition:width .6s ease; box-shadow:0 0 14px rgba(69,230,176,0.55);}
 .hero .story{font-size:14px; line-height:1.55; position:relative;}
 .hero .story b{font-weight:700;}
 .hero .story .warn{color:var(--red); font-weight:600;}
 .hero .story .nice{color:var(--green); font-weight:600;}
+
+/* ---- stat tiles ---- */
 .stats{display:flex; gap:10px; margin-bottom:16px;}
-.stat{flex:1; background:var(--surface); border:1px solid var(--line); border-radius:var(--radius-sm); padding:11px 13px;}
+.stat{flex:1; background:var(--surface); border:1px solid var(--edge); border-radius:var(--radius-sm); padding:11px 13px;
+  -webkit-backdrop-filter:blur(12px) saturate(1.4); backdrop-filter:blur(12px) saturate(1.4);
+  box-shadow:0 12px 30px -18px rgba(4,8,24,0.9), var(--sheen);}
 .stat .lbl{font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:0.4px;}
 .stat .val{font-size:22px; font-weight:600; margin-top:3px;}
-.stat .val.red{color:var(--red);} .stat .val.green{color:var(--green);}
+.stat .val.red{color:var(--red); text-shadow:0 0 18px rgba(255,138,128,0.35);} .stat .val.green{color:var(--green); text-shadow:0 0 18px rgba(69,230,176,0.35);}
+
+/* ---- calendar ---- */
 .dows{display:grid; grid-template-columns:repeat(7,1fr); gap:4px; margin-bottom:5px;}
 .dow{text-align:center; font-size:11px; color:var(--faint); font-weight:600;}
 .grid{display:grid; grid-template-columns:repeat(7,1fr); gap:4px;}
-.cell{aspect-ratio:0.78; border:1px solid var(--line); border-radius:11px; padding:4px; display:flex; flex-direction:column; align-items:flex-start; background:var(--surface); overflow:hidden; position:relative; touch-action:manipulation; cursor:pointer;}
+.cell{aspect-ratio:0.78; border:1px solid rgba(158,182,255,0.15); border-radius:11px; padding:4px; display:flex; flex-direction:column; align-items:flex-start; background:linear-gradient(180deg, rgba(28,37,70,0.55), rgba(17,23,46,0.48)); overflow:hidden; position:relative; touch-action:manipulation; cursor:pointer; box-shadow:inset 0 1px 0 rgba(255,255,255,0.04);}
 .cell.empty{cursor:default;}
-.cell.empty{border:none; background:transparent;}
-.cell.today{border-color:var(--blue); background:rgba(111,168,232,0.18);}
-.cell.overdue{border-color:var(--red); background:rgba(232,115,106,0.20);}
-.cell.overdue.today{background:rgba(232,115,106,0.20);}
+.cell.empty{border:none; background:transparent; box-shadow:none;}
+.cell.today{border-color:rgba(111,186,255,0.85); background:linear-gradient(180deg, rgba(62,128,196,0.30), rgba(34,76,128,0.22)); box-shadow:0 0 0 1px rgba(111,186,255,0.35), 0 0 18px -6px rgba(111,186,255,0.55), inset 0 1px 0 rgba(255,255,255,0.06);}
+.cell.overdue{border-color:rgba(255,138,128,0.80); background:linear-gradient(180deg, rgba(196,74,66,0.30), rgba(128,44,42,0.22)); box-shadow:0 0 0 1px rgba(255,138,128,0.30), 0 0 16px -6px rgba(255,110,100,0.45), inset 0 1px 0 rgba(255,255,255,0.05);}
+.cell.overdue.today{background:linear-gradient(180deg, rgba(196,74,66,0.30), rgba(128,44,42,0.22));}
 .dn{font-size:12px; color:var(--faint); align-self:flex-start; padding:1px 0 0 3px; font-weight:700;}
 .cell.today .dn{color:var(--blue);}
 .cell.overdue .dn{color:var(--red);}
-.ic{width:27px; height:27px; border-radius:7px; object-fit:contain; background:#fff; cursor:pointer; margin-top:1px; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; color:#fff; overflow:hidden; position:relative;}
+.ic{width:27px; height:27px; border-radius:7px; object-fit:contain; background:#fff; cursor:pointer; margin-top:1px; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; color:#fff; overflow:hidden; position:relative; box-shadow:0 2px 6px rgba(0,0,0,0.35);}
 .ic img{width:100%; height:100%; object-fit:contain;}
-.ic .cam{position:absolute; bottom:-2px; right:-2px; width:11px; height:11px; background:var(--blue); border-radius:50%; border:1.5px solid var(--surface); display:flex; align-items:center; justify-content:center; font-size:6px;}
+.ic .cam{position:absolute; bottom:-2px; right:-2px; width:11px; height:11px; background:var(--blue); border-radius:50%; border:1.5px solid var(--surface2); display:flex; align-items:center; justify-content:center; font-size:6px;}
 .amt{font-size:9px; font-weight:600; margin-top:1px; color:var(--ink);}
 .paid .ic{opacity:0.32; filter:grayscale(1);}
 .paid .amt{text-decoration:line-through; color:var(--faint);}
-.chk{position:absolute; top:2px; right:2px; width:13px; height:13px; border-radius:50%; background:var(--green); display:none; align-items:center; justify-content:center; font-size:9px; color:var(--bg); font-weight:800;}
+.chk{position:absolute; top:2px; right:2px; width:13px; height:13px; border-radius:50%; background:var(--green); display:none; align-items:center; justify-content:center; font-size:9px; color:#06251a; font-weight:800; box-shadow:0 0 10px rgba(69,230,176,0.6);}
 .paid .chk{display:flex;}
 .mrow{display:flex; align-items:center; gap:4px; margin-top:3px; width:100%; padding-left:2px;}
 .mrow .mic{width:16px; height:16px; border-radius:4px; overflow:hidden; background:#fff; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:7px; font-weight:800; color:#fff;}
@@ -85,15 +152,19 @@ body{padding:env(safe-area-inset-top) 16px calc(env(safe-area-inset-bottom) + 90
   .lay .hero{margin-top:56px !important;}
   .addbtn{right:8px; bottom:calc(env(safe-area-inset-bottom) + 4px);}
 }
-.row.overdue{border-color:var(--red); background:rgba(232,115,106,0.14);}
-.addbtn{position:fixed; right:18px; bottom:calc(env(safe-area-inset-bottom) + 18px); width:58px; height:58px; border-radius:50%; background:rgba(61,219,166,0.16); color:var(--green); border:1.5px dashed rgba(61,219,166,0.65); font-size:27px; font-weight:700; box-shadow:0 4px 14px rgba(0,0,0,0.25); cursor:pointer; z-index:50; display:flex; align-items:center; justify-content:center; padding:0; backdrop-filter:blur(4px); opacity:0.85;}
-.addbtn:active{transform:scale(0.94); background:rgba(61,219,166,0.3);}
+.row.overdue{border-color:rgba(255,138,128,0.55); background:rgba(150,58,52,0.18);}
+.addbtn{position:fixed; right:18px; bottom:calc(env(safe-area-inset-bottom) + 18px); width:58px; height:58px; border-radius:50%; background:rgba(69,230,176,0.14); color:var(--green); border:1.5px dashed rgba(69,230,176,0.65); font-size:27px; font-weight:700; box-shadow:0 6px 20px rgba(0,0,0,0.45), 0 0 26px -8px rgba(69,230,176,0.55); cursor:pointer; z-index:50; display:flex; align-items:center; justify-content:center; padding:0; -webkit-backdrop-filter:blur(8px); backdrop-filter:blur(8px); opacity:0.9;}
+.addbtn:active{transform:scale(0.94); background:rgba(69,230,176,0.3);}
+
+/* ---- lists ---- */
 .section{margin-top:22px;}
 .sec-head{display:flex; align-items:center; gap:8px; margin:18px 2px 10px;}
 .sec-title{font-size:13px; color:var(--muted); text-transform:uppercase; letter-spacing:0.5px; font-weight:600;}
 .sec-count{font-size:11px; color:var(--faint); background:var(--surface); border:1px solid var(--line); border-radius:20px; padding:2px 8px; font-weight:600;}
 .sec-title.pending{color:var(--red);}
-.row{display:flex; flex-wrap:wrap; align-items:center; gap:8px 12px; background:var(--surface); border:1px solid var(--line); border-radius:var(--radius-sm); padding:12px; margin-bottom:8px;}
+.row{display:flex; flex-wrap:wrap; align-items:center; gap:8px 12px; background:var(--surface); border:1px solid var(--line); border-radius:var(--radius-sm); padding:12px; margin-bottom:8px;
+  -webkit-backdrop-filter:blur(10px) saturate(1.3); backdrop-filter:blur(10px) saturate(1.3);
+  box-shadow:0 10px 26px -18px rgba(4,8,24,0.9), var(--sheen);}
 .row .ic{width:38px; height:38px; flex-shrink:0;}
 .row .info{flex:1; min-width:0; cursor:pointer;}
 .row .nmline{display:flex; align-items:center; justify-content:space-between; gap:10px;}
@@ -104,8 +175,8 @@ body{padding:env(safe-area-inset-top) 16px calc(env(safe-area-inset-bottom) + 90
 .row .sub{font-size:13px; color:var(--muted); margin-top:3px;}
 .row .sub .late{color:var(--red); font-weight:700;}
 .row .actions{display:flex; align-items:center; gap:6px; margin-left:auto;}
-.row .pill{background:transparent; border:1.5px solid var(--line); color:var(--ink); padding:9px 14px; border-radius:10px; font-size:13px; font-weight:700; cursor:pointer; white-space:nowrap;}
-.row.paid .pill{color:var(--green); border-color:var(--green);}
+.row .pill{background:rgba(158,182,255,0.06); border:1.5px solid rgba(170,193,255,0.30); color:var(--ink); padding:9px 14px; border-radius:10px; font-size:13px; font-weight:700; cursor:pointer; white-space:nowrap;}
+.row.paid .pill{color:var(--green); border-color:rgba(69,230,176,0.65); background:rgba(69,230,176,0.08); box-shadow:0 0 14px -6px rgba(69,230,176,0.5);}
 .row .del{background:none; border:none; color:var(--faint); font-size:18px; cursor:pointer; padding:8px;}
 @media (max-width:480px){
   .row .actions{flex-basis:100%; justify-content:flex-end; border-top:1px solid var(--line); padding-top:8px; margin-top:2px;}
@@ -117,54 +188,94 @@ body{padding:env(safe-area-inset-top) 16px calc(env(safe-area-inset-bottom) + 90
   .hero .big{font-size:30px;}
   .hero .story{font-size:13px; line-height:1.5;}
 }
-.overlay{position:fixed; inset:0; background:rgba(0,0,0,0.6); display:none; align-items:center; justify-content:center; padding:16px; z-index:100; backdrop-filter:blur(3px);}
+
+/* ---- sheets & fields ---- */
+.overlay{position:fixed; inset:0; background:rgba(3,6,16,0.62); display:none; align-items:center; justify-content:center; padding:16px; z-index:100; -webkit-backdrop-filter:blur(6px); backdrop-filter:blur(6px);}
 .overlay.open{display:flex;}
-.sheet{background:var(--surface); width:100%; max-width:480px; margin:0 auto; border-radius:24px; padding:22px 18px 24px; border:1px solid var(--line); max-height:90vh; overflow-y:auto;}
-.sheet h2{font-size:19px; font-weight:700; margin-bottom:16px;}
+.sheet{background:linear-gradient(180deg, rgba(26,34,64,0.92), rgba(15,21,42,0.95)); width:100%; max-width:480px; margin:0 auto; border-radius:24px; padding:22px 18px 24px; border:1px solid rgba(172,196,255,0.26); max-height:90vh; overflow-y:auto;
+  -webkit-backdrop-filter:blur(24px) saturate(1.4); backdrop-filter:blur(24px) saturate(1.4);
+  box-shadow:0 34px 90px -34px rgba(0,0,0,0.85), 0 0 50px -24px rgba(124,140,255,0.35), inset 0 1px 0 rgba(255,255,255,0.09);}
+.sheet h2{font-size:19px; font-weight:700; margin-bottom:16px; text-shadow:0 0 22px rgba(143,158,255,0.30);}
 .field{margin-bottom:12px;}
 .field label{display:block; font-size:12px; color:var(--muted); margin-bottom:5px; font-weight:600;}
-.field input{width:100%; background:var(--bg); border:1px solid var(--line); color:var(--ink); padding:13px; border-radius:11px; font-size:16px;}
-.field input:focus{outline:none; border-color:var(--indigo);}
+.field input{width:100%; background:var(--well); border:1px solid var(--line); color:var(--ink); padding:13px; border-radius:11px; font-size:16px;}
+.field input:focus{outline:none; border-color:var(--indigo); box-shadow:0 0 0 3px rgba(143,158,255,0.16);}
+.field select{width:100%; background-color:var(--well);
+  background-image:linear-gradient(45deg, transparent 50%, #b9c4f2 50%), linear-gradient(135deg, #b9c4f2 50%, transparent 50%);
+  background-position:calc(100% - 20px) calc(50% - 2px), calc(100% - 15px) calc(50% - 2px);
+  background-size:5px 5px, 5px 5px; background-repeat:no-repeat;
+  border:1px solid var(--line); color:var(--ink); padding:13px 40px 13px 13px; border-radius:11px; font-size:16px; -webkit-appearance:none; appearance:none;}
+.field select:focus{outline:none; border-color:var(--indigo); box-shadow:0 0 0 3px rgba(143,158,255,0.16);}
+.row .sub .acct{color:var(--blue); font-weight:600;}
+.acct-row{display:flex; align-items:center; gap:10px; background:var(--well); border:1px solid var(--line); border-radius:11px; padding:11px 12px; margin-bottom:8px; box-shadow:var(--sheen);}
+.acct-row .ai{width:34px; height:34px; border-radius:9px; background:linear-gradient(150deg, rgba(143,158,255,0.22), rgba(143,158,255,0.06)); border:1px solid rgba(143,158,255,0.28); display:flex; align-items:center; justify-content:center; font-size:16px; flex-shrink:0;}
+.acct-row .at{flex:1; min-width:0;}
+.acct-row .at b{font-size:14px; display:block;}
+.acct-row .at small{font-size:12px; color:var(--muted);}
+.acct-row button{background:none; border:none; color:var(--faint); font-size:16px; cursor:pointer; padding:6px;}
+.linkbox{background:var(--well); border:1px solid var(--line); border-radius:11px; padding:12px; font-size:12px; color:var(--muted); word-break:break-all; margin:10px 0; line-height:1.5; font-family:ui-monospace,SFMono-Regular,Menlo,monospace; box-shadow:var(--sheen);}
+.asum{background:var(--surface); border:1px solid var(--edge); border-radius:var(--radius-sm); padding:12px; margin-bottom:8px; cursor:pointer;
+  -webkit-backdrop-filter:blur(10px) saturate(1.3); backdrop-filter:blur(10px) saturate(1.3);
+  box-shadow:0 10px 26px -18px rgba(4,8,24,0.9), var(--sheen);}
+.asum:active{background:var(--surface2);}
+.asum .top{display:flex; justify-content:space-between; align-items:baseline; gap:10px; margin-bottom:7px;}
+.asum .an{font-size:14px; font-weight:700; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+.asum .an small{color:var(--muted); font-weight:600;}
+.asum .av{font-size:17px; font-weight:800; flex-shrink:0;}
+.asum .bar{margin-bottom:7px;}
+.asum .foot{display:flex; justify-content:space-between; font-size:12px; color:var(--muted); gap:8px;}
+.asum .foot .hint{color:var(--faint);}
+.asum.unassigned{border-style:dashed;}
+.hist-row{display:flex; justify-content:space-between; align-items:center; padding:11px 2px; border-bottom:1px solid var(--line); font-size:14px;}
+.hist-row:last-child{border-bottom:none;}
+.hist-row .hm{color:var(--muted); font-weight:600;}
+.hist-row .hv{font-weight:700;}
+.hist-row .hv small{color:var(--faint); font-weight:600; font-size:12px;}
+.hist-sum{background:var(--well); border:1px solid var(--line); border-radius:11px; padding:12px 14px; margin-bottom:10px; font-size:13px; color:var(--muted); line-height:1.6; box-shadow:var(--sheen);}
+.hist-sum b{color:var(--ink);}
+.remind-note{font-size:12px; color:var(--muted); line-height:1.5; margin-top:8px;}
+.bigstep{display:flex; gap:10px; align-items:flex-start; margin:10px 0; font-size:14px; line-height:1.5;}
+.bigstep .n{width:24px; height:24px; border-radius:50%; background:linear-gradient(150deg, rgba(143,158,255,0.26), rgba(143,158,255,0.08)); border:1px solid rgba(143,158,255,0.45); display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; flex-shrink:0; color:#c6cfff; box-shadow:0 0 12px -4px rgba(143,158,255,0.55);}
 .fr>div{flex:1;} .fr{display:flex; gap:10px;}
 .preview{display:flex; align-items:center; gap:10px; margin:6px 0 14px; min-height:38px;}
 .preview .ic{width:38px; height:38px;}
 .preview .ptxt{font-size:13px; color:var(--muted);}
 .photo-block{margin-bottom:14px;}
-.photo-btn{width:100%; background:var(--bg); border:1px dashed var(--line); color:var(--muted); padding:14px; border-radius:11px; font-size:14px; font-weight:600; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;}
-.photo-thumb{position:relative; margin-top:8px; border-radius:11px; overflow:hidden; border:1px solid var(--line);}
+.photo-btn{width:100%; background:var(--well); border:1px dashed rgba(158,182,255,0.35); color:var(--muted); padding:14px; border-radius:11px; font-size:14px; font-weight:600; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;}
+.photo-thumb{position:relative; margin-top:8px; border-radius:11px; overflow:hidden; border:1px solid var(--edge); box-shadow:0 8px 24px -12px rgba(0,0,0,0.7);}
 .photo-thumb img{width:100%; display:block; max-height:200px; object-fit:cover;}
 .photo-thumb .remove{position:absolute; top:8px; right:8px; background:rgba(0,0,0,0.65); color:#fff; border:none; width:30px; height:30px; border-radius:50%; font-size:16px; cursor:pointer;}
 .sheet-actions{display:flex; gap:10px; margin-top:6px;}
-.btn{flex:1; padding:14px; border-radius:13px; font-size:15px; font-weight:700; cursor:pointer; border:1px solid var(--line); background:transparent; color:var(--ink);}
-.btn.primary{background:linear-gradient(135deg, var(--indigo), #5a6cf0); color:#fff; border-color:transparent;}
+.btn{flex:1; padding:14px; border-radius:13px; font-size:15px; font-weight:700; cursor:pointer; border:1px solid var(--edge); background:rgba(158,182,255,0.06); color:var(--ink); box-shadow:var(--sheen);}
+.btn.primary{background:linear-gradient(135deg, var(--indigo), #6a5df0); color:#fff; border-color:transparent; box-shadow:0 10px 28px -10px rgba(122,109,255,0.65), inset 0 1px 0 rgba(255,255,255,0.22); text-shadow:0 1px 2px rgba(20,20,60,0.35);}
 .recur{display:flex; gap:8px; margin-top:4px;}
-.recur button{flex:1; padding:10px 4px; border-radius:10px; border:1px solid var(--line); background:var(--bg); color:var(--muted); font-size:12px; font-weight:600; cursor:pointer; white-space:nowrap;}
-.recur button.on{border-color:var(--indigo); color:var(--indigo); background:var(--surface2);}
+.recur button{flex:1; padding:10px 4px; border-radius:10px; border:1px solid var(--line); background:var(--well); color:var(--muted); font-size:12px; font-weight:600; cursor:pointer; white-space:nowrap;}
+.recur button.on{border-color:rgba(143,158,255,0.75); color:#cdd5ff; background:rgba(143,158,255,0.14); box-shadow:0 0 14px -6px rgba(143,158,255,0.6), var(--sheen);}
 .empty-msg{text-align:center; color:var(--faint); font-size:14px; padding:24px 0;}
-.exp{background:none; border:1px solid var(--line); color:var(--muted); font-size:11px; padding:5px 10px; border-radius:8px; cursor:pointer; font-weight:600;}
-.exp.synced{color:var(--green); border-color:var(--green);}
-.exp.offline{color:var(--red); border-color:var(--red);}
-.menu-acct{font-size:13px; color:var(--muted); background:var(--bg); border:1px solid var(--line); border-radius:11px; padding:12px 14px; margin-bottom:14px; text-align:center; line-height:1.5;}
+.exp{background:rgba(23,31,60,0.5); border:1px solid var(--line); color:var(--muted); font-size:11px; padding:5px 10px; border-radius:8px; cursor:pointer; font-weight:600; -webkit-backdrop-filter:blur(8px); backdrop-filter:blur(8px);}
+.exp.synced{color:var(--green); border-color:rgba(69,230,176,0.6); box-shadow:0 0 12px -5px rgba(69,230,176,0.5);}
+.exp.offline{color:var(--red); border-color:rgba(255,138,128,0.6);}
+.menu-acct{font-size:13px; color:var(--muted); background:var(--well); border:1px solid var(--line); border-radius:11px; padding:12px 14px; margin-bottom:14px; text-align:center; line-height:1.5; box-shadow:var(--sheen);}
 .menu-acct b{color:var(--ink);}
-.menu-item{display:flex; align-items:center; gap:12px; width:100%; background:var(--bg); border:1px solid var(--line); border-radius:12px; padding:13px 14px; margin-bottom:8px; cursor:pointer; color:var(--ink);}
+.menu-item{display:flex; align-items:center; gap:12px; width:100%; background:var(--well); border:1px solid var(--line); border-radius:12px; padding:13px 14px; margin-bottom:8px; cursor:pointer; color:var(--ink); box-shadow:var(--sheen);}
 .menu-item:active{background:var(--surface2);}
 .menu-item .mi-ic{font-size:18px; width:26px; text-align:center; flex-shrink:0;}
 .menu-item .mi-tx{display:flex; flex-direction:column; text-align:left;}
 .menu-item .mi-tx b{font-size:15px; font-weight:600;}
 .menu-item .mi-tx small{font-size:12px; color:var(--muted); margin-top:1px; font-weight:400;}
-.menu-item.danger{border-color:rgba(232,115,106,0.45);}
+.menu-item.danger{border-color:rgba(255,138,128,0.45);}
 .menu-item.danger .mi-tx b{color:var(--red);}
-.menu-item.go{border-color:rgba(232,184,75,0.5);}
+.menu-item.go{border-color:rgba(255,206,107,0.50); box-shadow:0 0 16px -8px rgba(255,206,107,0.45), var(--sheen);}
 .menu-item.go .mi-tx b{color:var(--gold);}
-.viewer{position:fixed; inset:0; background:rgba(0,0,0,0.93); display:none; flex-direction:column; z-index:200;}
+.viewer{position:fixed; inset:0; background:rgba(2,4,12,0.93); display:none; flex-direction:column; z-index:200; -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px);}
 .viewer.open{display:flex;}
 .viewer-top{display:flex; align-items:center; justify-content:space-between; padding:calc(env(safe-area-inset-top) + 14px) 18px 14px;}
 .viewer-top .vname{font-size:16px; font-weight:700; color:#fff;}
-.viewer-top .vsub{font-size:13px; color:#bbb; margin-top:2px;}
-.viewer-top .vclose{background:rgba(255,255,255,0.12); border:none; color:#fff; width:38px; height:38px; border-radius:50%; font-size:20px; cursor:pointer;}
+.viewer-top .vsub{font-size:13px; color:#c0c8e6; margin-top:2px;}
+.viewer-top .vclose{background:rgba(255,255,255,0.12); border:1px solid rgba(255,255,255,0.14); color:#fff; width:38px; height:38px; border-radius:50%; font-size:20px; cursor:pointer;}
 .viewer-body{flex:1; display:flex; align-items:center; justify-content:center; padding:10px; overflow:auto;}
-.viewer-body img{max-width:100%; max-height:100%; border-radius:8px;}
-.viewer-body .nophoto{color:#888; text-align:center; font-size:15px; padding:40px; line-height:1.6;}
+.viewer-body img{max-width:100%; max-height:100%; border-radius:8px; box-shadow:0 20px 60px rgba(0,0,0,0.6);}
+.viewer-body .nophoto{color:#9aa4c8; text-align:center; font-size:15px; padding:40px; line-height:1.6;}
 .hiddenfile{display:none;}
 @media (min-width:960px){
   body{max-width:1330px;}
@@ -172,37 +283,48 @@ body{padding:env(safe-area-inset-top) 16px calc(env(safe-area-inset-bottom) + 90
   .z-cal{grid-area:cal;}
   .lay .stats{grid-area:stats; flex-direction:column; margin-bottom:0;}
   .lay .hero{grid-area:hero; margin-top:0 !important; margin-bottom:0;}
-  .lay #lists{grid-area:lists; margin-top:0; overflow-y:auto; overscroll-behavior:contain; border:1px solid var(--line); border-radius:16px; padding:10px 12px; background:rgba(23,29,46,0.45);}
+  .lay #lists{grid-area:lists; margin-top:0; overflow-y:auto; overscroll-behavior:contain; border:1px solid var(--line); border-radius:16px; padding:10px 12px; background:rgba(17,24,48,0.42); -webkit-backdrop-filter:blur(12px) saturate(1.3); backdrop-filter:blur(12px) saturate(1.3); box-shadow:var(--sheen);}
   .lay #lists::-webkit-scrollbar{width:6px;}
-  .lay #lists::-webkit-scrollbar-thumb{background:var(--line); border-radius:3px;}
+  .lay #lists::-webkit-scrollbar-thumb{background:rgba(158,182,255,0.28); border-radius:3px;}
   .lay #lists::-webkit-scrollbar-track{background:transparent; margin:14px 0;}
   .lay #lists .sec-head:first-child{margin-top:4px;}
   .grid{grid-auto-rows:1fr;}
   .cell{aspect-ratio:auto; min-height:0;}
   .lay .stat{padding:13px 15px;}
 }
-.auth{position:fixed; inset:0; background:var(--bg); z-index:300; display:none; align-items:center; justify-content:center; padding:24px;}
+.auth{position:fixed; inset:0; background:rgba(6,10,23,0.80); z-index:300; display:none; align-items:center; justify-content:center; padding:24px; -webkit-backdrop-filter:blur(22px) saturate(1.3); backdrop-filter:blur(22px) saturate(1.3);}
 .auth.open{display:flex;}
-.auth-card{width:100%; max-width:380px; background:var(--surface); border:1px solid var(--line); border-radius:20px; padding:26px 22px; text-align:center;}
-.auth-card .logo{font-size:34px; margin-bottom:10px;}
-.auth-card h1{font-size:20px; font-weight:700; margin-bottom:6px;}
+.auth-card{width:100%; max-width:380px; background:linear-gradient(180deg, rgba(26,34,64,0.92), rgba(15,21,42,0.95)); border:1px solid rgba(172,196,255,0.28); border-radius:20px; padding:26px 22px; text-align:center;
+  box-shadow:0 34px 90px -34px rgba(0,0,0,0.85), 0 0 50px -22px rgba(124,140,255,0.40), inset 0 1px 0 rgba(255,255,255,0.09);}
+.auth-card .logo{font-size:34px; margin-bottom:10px; filter:drop-shadow(0 0 14px rgba(143,158,255,0.55));}
+.auth-card h1{font-size:20px; font-weight:700; margin-bottom:6px; text-shadow:0 0 24px rgba(143,158,255,0.35);}
 .auth-card p{font-size:13px; color:var(--muted); line-height:1.5; margin-bottom:18px;}
-.auth-card input{width:100%; background:var(--bg); border:1px solid var(--line); color:var(--ink); padding:13px; border-radius:11px; font-size:16px; margin-bottom:10px; text-align:center;}
-.auth-card input:focus{outline:none; border-color:var(--indigo);}
+.auth-card input{width:100%; background:var(--well); border:1px solid var(--line); color:var(--ink); padding:13px; border-radius:11px; font-size:16px; margin-bottom:10px; text-align:center;}
+.auth-card input:focus{outline:none; border-color:var(--indigo); box-shadow:0 0 0 3px rgba(143,158,255,0.16);}
 .auth-card .btn{width:100%;}
 .auth-card .msg{font-size:13px; margin-top:12px; min-height:18px;}
 .auth-card .msg.ok{color:var(--green);}
 .auth-card .msg.err{color:var(--red);}
 .auth-card .skip{display:block; margin-top:16px; background:none; border:none; color:var(--faint); font-size:12px; cursor:pointer; text-decoration:underline;}
+
+/* v21 feature shims */
+.overlay.kbd{align-items:flex-start; padding-top:12px;}
+#remindRow{flex-wrap:wrap; gap:6px;}
+#remindRow button{padding:10px 2px; font-size:11px;}
+.field select{width:100%; background:var(--bg) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%2394a0c2' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 13px center; border:1px solid var(--line); color:var(--ink); padding:13px 36px 13px 13px; border-radius:11px; font-size:16px; -webkit-appearance:none; appearance:none;}
+.field select:focus{outline:none; border-color:var(--indigo);}
 </style>
 </head>
 <body>
+
+<div class="mx-aurora" aria-hidden="true"></div>
+
 
 <div class="head">
   <div class="title">Bills</div>
   <div class="headbtns">
     <button class="exp" id="syncChip">Local only</button>
-    <button class="exp" id="exportBtn">Add to calendar</button>
+    <button class="exp" id="remindBtn">🔔 Reminders</button>
   </div>
 </div>
 
@@ -240,7 +362,7 @@ body{padding:env(safe-area-inset-top) 16px calc(env(safe-area-inset-bottom) + 90
 
 <div class="section" style="display:flex; flex-direction:column; align-items:center; gap:6px; padding-bottom:8px;">
   <button class="exp" id="menuBtn">⚙️ Account &amp; backup</button>
-  <div style="color:var(--faint); font-size:10px; font-weight:600;">v20</div>
+  <div style="color:var(--faint); font-size:10px; font-weight:600;">v22</div>
   <input type="file" accept=".json,application/json" class="hiddenfile" id="restoreInput">
 </div>
 
@@ -248,6 +370,7 @@ body{padding:env(safe-area-inset-top) 16px calc(env(safe-area-inset-bottom) + 90
   <div class="sheet">
     <h2>Account &amp; backup</h2>
     <div class="menu-acct" id="menuAcct">Not signed in</div>
+    <button class="menu-item" id="mAccts"><span class="mi-ic">💳</span><span class="mi-tx"><b>Payment accounts</b><small>The accounts your bills pull from</small></span></button>
     <button class="menu-item" id="mSetPass"><span class="mi-ic">🔑</span><span class="mi-tx"><b>Set or change password</b><small>Use it to sign in on any device</small></span></button>
     <button class="menu-item" id="mBackup"><span class="mi-ic">⬇</span><span class="mi-tx"><b>Back up my bills</b><small>Saves a copy as a file</small></span></button>
     <button class="menu-item" id="mRestore"><span class="mi-ic">⬆</span><span class="mi-tx"><b>Restore from backup</b><small>Load bills from a backup file</small></span></button>
@@ -292,9 +415,60 @@ body{padding:env(safe-area-inset-top) 16px calc(env(safe-area-inset-bottom) + 90
         <button type="button" data-r="once">One time</button>
       </div>
     </div>
+    <div class="field">
+      <label>Pays from (account)</label>
+      <select id="f_acct"><option value="">— not set —</option></select>
+    </div>
+    <div class="field">
+      <label>Remind me before it's due</label>
+      <div class="recur" id="remindRow">
+        <button type="button" data-d="0">Due day</button>
+        <button type="button" data-d="1">1 day</button>
+        <button type="button" data-d="2" class="on">2 days</button>
+        <button type="button" data-d="3">3 days</button>
+        <button type="button" data-d="7">1 week</button>
+      </div>
+    </div>
     <div class="sheet-actions">
       <button class="btn" id="cancel">Cancel</button>
       <button class="btn primary" id="save">Save bill</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="acctOverlay">
+  <div class="sheet">
+    <h2>Payment accounts</h2>
+    <p style="font-size:13px; color:var(--muted); line-height:1.5; margin-bottom:14px;">Add each account your bills pull from — just the bank, a nickname, and the <b>last 4 digits</b>. Never store the full account number here.</p>
+    <div id="acctList"></div>
+    <div class="fr" style="margin-top:14px;">
+      <div class="field"><label>Bank</label><input id="a_bank" placeholder="e.g. Qualstar" autocomplete="off"></div>
+      <div class="field"><label>Last 4 digits</label><input id="a_last4" inputmode="numeric" maxlength="4" placeholder="1234" autocomplete="off"></div>
+    </div>
+    <div class="field"><label>Nickname</label><input id="a_nick" placeholder="e.g. Checking" autocomplete="off"></div>
+    <div class="sheet-actions">
+      <button class="btn" id="acctClose">Close</button>
+      <button class="btn primary" id="acctSave">Add account</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="histOverlay">
+  <div class="sheet">
+    <h2 id="histTitle">Account history</h2>
+    <div id="histBody"></div>
+    <div class="sheet-actions">
+      <button class="btn" id="histClose">Close</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="remindOverlay">
+  <div class="sheet">
+    <h2>🔔 Bill reminders</h2>
+    <div id="remindBody"></div>
+    <div class="sheet-actions">
+      <button class="btn" id="remindClose">Close</button>
     </div>
   </div>
 </div>
@@ -345,17 +519,29 @@ body{padding:env(safe-area-inset-top) 16px calc(env(safe-area-inset-bottom) + 90
   /* =========================================================================== */
 
   var KEY="billcal.bills.v2";
+  var ACCTKEY="billcal.accounts.v1";
+  var ACCTDIRTY="billcal.dirty.accts";
+  var TOKKEY="billcal.feedtoken";
   var DIRTY="billcal.dirty";
   var SKIP="billcal.skipauth";
+  var FEED_BASE="https://fzsfizqkolkxkorgvtcl.supabase.co/functions/v1/bills-ics";
   var PALETTE=["#e8b84b","#5dcaa5","#6fa8e8","#e8736a","#c79fe8","#e89f5d","#9fc34b"];
   var bills=loadLocal();
+  var accounts=loadAccounts();
+  var feedToken=null; try{feedToken=localStorage.getItem(TOKKEY)||null;}catch(e){}
   var view=new Date(); view.setDate(1);
-  var editId=null, recur="monthly", pendingPhoto=null;
+  var editId=null, recur="monthly", remindDays=2, pendingPhoto=null;
+  var editAcctId=null, acctReturnToBill=false;
   var tapTimer=null, lastTapDay=-1, lastTapTime=0;
   var cloud=null, cloudUser=null, pushTimer=null, lastServerStamp=null, applyingRemote=false;
 
   function loadLocal(){ try{var r=localStorage.getItem(KEY); if(r) return JSON.parse(r);}catch(e){} return seed(); }
   function saveLocal(){ try{localStorage.setItem(KEY, JSON.stringify(bills)); }catch(e){ alert("Couldn't save locally — storage may be full. Try removing a photo or two."); } }
+  function loadAccounts(){ try{var r=localStorage.getItem(ACCTKEY); if(r) return JSON.parse(r);}catch(e){} return []; }
+  function saveAccounts(){ try{localStorage.setItem(ACCTKEY, JSON.stringify(accounts));}catch(e){} }
+  function acctById(id){ if(id==null) return null; for(var i=0;i<accounts.length;i++){ if(accounts[i].id===id) return accounts[i]; } return null; }
+  function acctLabel(id){ var a=acctById(id); if(!a) return null; return (a.nick||a.bank)+" ••"+a.last4; }
+  function acctLabelFull(id){ var a=acctById(id); if(!a) return null; return a.bank+" "+(a.nick||"")+" ••"+a.last4; }
   function seed(){
     var t=new Date();
     function iso(day){return t.getFullYear()+"-"+pad(t.getMonth()+1)+"-"+pad(day);}
@@ -380,19 +566,27 @@ body{padding:env(safe-area-inset-top) 16px calc(env(safe-area-inset-bottom) + 90
     if(pushTimer) clearTimeout(pushTimer);
     pushTimer=setTimeout(pushNow, 800);
   }
+  function markAcctsDirty(){ try{localStorage.setItem(ACCTDIRTY,"1");}catch(e){} }
   function pushNow(){
     if(!cloud||!cloudUser) return;
     setChip("","Syncing…");
     var stamp=new Date().toISOString();
-    cloud.from("billdata").upsert({user_id:cloudUser.id, bills:bills, updated_at:stamp})
+    var payload={user_id:cloudUser.id, bills:bills, updated_at:stamp};
+    // Only send accounts when this device actually changed them (or when creating
+    // the very first row) — otherwise a stale copy would clobber newer server accounts.
+    var acctsDirty="1"===localStorage.getItem(ACCTDIRTY);
+    if(acctsDirty || lastServerStamp===null) payload.accounts=accounts;
+    cloud.from("billdata").upsert(payload)
       .then(function(res){
         if(res.error){ setChip("offline","Offline — will retry"); }
-        else { lastServerStamp=stamp; try{localStorage.setItem(DIRTY,"0");}catch(e){} setChip("synced","Synced ✓"); }
+        else { lastServerStamp=stamp; try{localStorage.setItem(DIRTY,"0"); if(payload.accounts) localStorage.setItem(ACCTDIRTY,"0");}catch(e){} setChip("synced","Synced ✓"); }
       });
   }
-  function adoptServer(rowBills, stamp){
+  function adoptServer(rowBills, stamp, rowAccounts, rowToken){
     applyingRemote=true;
     bills=rowBills||[];
+    if(rowAccounts!==undefined){ accounts=rowAccounts||[]; saveAccounts(); try{localStorage.setItem(ACCTDIRTY,"0");}catch(e){} }
+    if(rowToken){ feedToken=rowToken; try{localStorage.setItem(TOKKEY,rowToken);}catch(e){} }
     lastServerStamp=stamp||null;
     saveLocal();
     try{localStorage.setItem(DIRTY,"0");}catch(e){}
@@ -401,12 +595,12 @@ body{padding:env(safe-area-inset-top) 16px calc(env(safe-area-inset-bottom) + 90
   }
   function pullLatest(){
     if(!cloud||!cloudUser) return;
-    cloud.from("billdata").select("bills,updated_at").eq("user_id",cloudUser.id).maybeSingle()
+    cloud.from("billdata").select("bills,accounts,feed_token,updated_at").eq("user_id",cloudUser.id).maybeSingle()
       .then(function(res){
         if(res.error){ setChip("offline","Offline"); return; }
         var dirty="1"===localStorage.getItem(DIRTY);
         if(res.data){
-          if(res.data.updated_at!==lastServerStamp && !dirty){ adoptServer(res.data.bills,res.data.updated_at); }
+          if(res.data.updated_at!==lastServerStamp && !dirty){ adoptServer(res.data.bills,res.data.updated_at,res.data.accounts,res.data.feed_token); }
           else if(dirty){ pushNow(); return; }
           setChip("synced","Synced ✓");
         } else {
@@ -416,24 +610,79 @@ body{padding:env(safe-area-inset-top) 16px calc(env(safe-area-inset-bottom) + 90
   }
   function startSync(){
     setChip("","Syncing…");
-    cloud.from("billdata").select("bills,updated_at").eq("user_id",cloudUser.id).maybeSingle()
+    cloud.from("billdata").select("bills,accounts,feed_token,updated_at").eq("user_id",cloudUser.id).maybeSingle()
       .then(function(res){
         if(res.error){ setChip("offline","Offline"); return; }
         if(res.data && res.data.bills && res.data.bills.length){
           var dirty="1"===localStorage.getItem(DIRTY);
-          var differs=JSON.stringify(res.data.bills)!==JSON.stringify(bills);
+          var differs=JSON.stringify(res.data.bills)!==JSON.stringify(bills)
+            || JSON.stringify(res.data.accounts||[])!==JSON.stringify(accounts);
           if(dirty && differs){
-            if(confirm("This device has changes that were never synced.\n\nOK = use the CLOUD copy ("+res.data.bills.length+" bills)\nCancel = upload THIS device's bills and overwrite the cloud")){
-              adoptServer(res.data.bills,res.data.updated_at);
-            } else { pushNow(); }
+            if(confirm("This device has changes that were never synced.\n\nOK = use the CLOUD copy ("+res.data.bills.length+" bills + its accounts)\nCancel = upload THIS device's bills & accounts and overwrite the cloud")){
+              adoptServer(res.data.bills,res.data.updated_at,res.data.accounts,res.data.feed_token);
+            } else { markAcctsDirty(); pushNow(); }
           } else {
-            adoptServer(res.data.bills,res.data.updated_at);
+            adoptServer(res.data.bills,res.data.updated_at,res.data.accounts,res.data.feed_token);
             setChip("synced","Synced ✓");
           }
         } else {
+          // Row missing or has no bills yet. Keep this device's bills, but adopt any
+          // server-side accounts/token first so pushing can't wipe them.
+          if(res.data){
+            if(res.data.feed_token){ feedToken=res.data.feed_token; try{localStorage.setItem(TOKKEY,res.data.feed_token);}catch(e){} }
+            if(res.data.accounts && res.data.accounts.length){
+              res.data.accounts.forEach(function(sa){ if(!acctById(sa.id)) accounts.push(sa); });
+              saveAccounts();
+            }
+          }
           pushNow();
         }
+        ensureFeedToken();
         subscribeRealtime();
+      });
+  }
+  function makeToken(){
+    var bytes=new Uint8Array(24);
+    (window.crypto||window.msCrypto).getRandomValues(bytes);
+    var s=""; for(var i=0;i<bytes.length;i++){ s+=("0"+bytes[i].toString(16)).slice(-2); }
+    return s;
+  }
+  function ensureFeedToken(cb){
+    if(!cloud||!cloudUser){ if(cb) cb(null); return; }
+    if(feedToken){ if(cb) cb(feedToken); return; }
+    function adopt(tok){ feedToken=tok; try{localStorage.setItem(TOKKEY,tok);}catch(e){} if(cb) cb(tok); }
+    // Always ask the server first — another device may already have created a token,
+    // and regenerating would silently kill that device's subscribed calendar.
+    cloud.from("billdata").select("feed_token").eq("user_id",cloudUser.id).maybeSingle()
+      .then(function(res){
+        if(res.error){ if(cb) cb(null); return; }
+        if(res.data && res.data.feed_token){ adopt(res.data.feed_token); return; }
+        var t=makeToken();
+        var stamp=new Date().toISOString();
+        if(res.data){
+          // Row exists but has no token: guarded update (first writer wins). Never inserts,
+          // so it can never create a row with default-empty bills.
+          cloud.from("billdata").update({feed_token:t, updated_at:stamp}).eq("user_id",cloudUser.id).is("feed_token",null).select("feed_token")
+            .then(function(r2){
+              if(r2.error){ if(cb) cb(null); return; }
+              if(r2.data && r2.data.length){ lastServerStamp=stamp; adopt(t); }
+              else {
+                // Another device won the race — use its token instead of clobbering it.
+                cloud.from("billdata").select("feed_token").eq("user_id",cloudUser.id).maybeSingle()
+                  .then(function(r3){
+                    if(r3.data && r3.data.feed_token){ adopt(r3.data.feed_token); } else if(cb) cb(null);
+                  });
+              }
+            });
+        } else {
+          // No row at all: create it carrying the FULL local data, so an insert
+          // can never write empty bills that a later pull would adopt.
+          cloud.from("billdata").upsert({user_id:cloudUser.id, feed_token:t, bills:bills, accounts:accounts, updated_at:stamp})
+            .then(function(r2){
+              if(r2.error){ if(cb) cb(null); return; }
+              lastServerStamp=stamp; adopt(t);
+            });
+        }
       });
   }
   function subscribeRealtime(){
@@ -441,7 +690,7 @@ body{padding:env(safe-area-inset-top) 16px calc(env(safe-area-inset-bottom) + 90
       cloud.channel("billdata-live")
         .on("postgres_changes",{event:"*",schema:"public",table:"billdata",filter:"user_id=eq."+cloudUser.id},function(payload){
           if(payload["new"] && payload["new"].updated_at!==lastServerStamp){
-            adoptServer(payload["new"].bills, payload["new"].updated_at);
+            adoptServer(payload["new"].bills, payload["new"].updated_at, payload["new"].accounts, payload["new"].feed_token);
             setChip("synced","Synced ✓");
           }
         })
@@ -513,6 +762,11 @@ body{padding:env(safe-area-inset-top) 16px calc(env(safe-area-inset-bottom) + 90
     cloud.auth.onAuthStateChange(function(_event,session){
       var was=cloudUser&&cloudUser.id;
       cloudUser=session?session.user:null;
+      // A feed token belongs to one signed-in user — never let it survive a
+      // sign-out or leak to a different account on the same device.
+      if(!cloudUser || (was && cloudUser.id!==was)){
+        feedToken=null; try{localStorage.removeItem(TOKKEY);}catch(e){}
+      }
       updateAuthUI();
       if(cloudUser && cloudUser.id!==was){ startSync(); }
     });
@@ -581,6 +835,22 @@ body{padding:env(safe-area-inset-top) 16px calc(env(safe-area-inset-bottom) + 90
   var months=["January","February","March","April","May","June","July","August","September","October","November","December"];
   function pad(n){return n<10?"0"+n:""+n;}
   function fmtMoney(n){ var r=Math.round(n*100)/100; return "$"+(r%1===0 ? r.toLocaleString() : r.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})); }
+  function escHtml(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+  function escapeIcs(s){ return String(s).replace(/\\/g,"\\\\").replace(/;/g,"\\;").replace(/,/g,"\\,").replace(/\r?\n/g,"\\n"); }
+  function deliverFile(blob, filename){
+    // Installed home-screen apps on iOS have no download UI — hand the file to the
+    // share sheet there; plain anchor download everywhere else.
+    var standalone=(navigator.standalone===true)||(window.matchMedia&&matchMedia("(display-mode: standalone)").matches);
+    if(standalone && navigator.canShare && window.File){
+      try{
+        var f=new File([blob], filename, {type:blob.type});
+        if(navigator.canShare({files:[f]})){ navigator.share({files:[f]}).catch(function(){}); return; }
+      }catch(e){}
+    }
+    var url=URL.createObjectURL(blob);
+    var a=document.createElement("a"); a.href=url; a.download=filename; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function(){URL.revokeObjectURL(url);},1000);
+  }
   function daysPastDue(b,y,m){ var due=new Date(y,m,dueDayInMonth(b,y,m)); due.setHours(0,0,0,0); var t=new Date(); t.setHours(0,0,0,0); return Math.round((t-due)/86400000); }
   function monthKey(d){return d.getFullYear()+"-"+d.getMonth();}
   function dueDayInMonth(b,y,m){
@@ -765,11 +1035,104 @@ body{padding:env(safe-area-inset-top) 16px calc(env(safe-area-inset-bottom) + 90
     var pastDue=ent.filter(function(e){return !isPaidOcc(e.b,y,m,e.day) && isOverdueOcc(e.b,y,m,e.day);});
     var pending=ent.filter(function(e){return !isPaidOcc(e.b,y,m,e.day) && !isOverdueOcc(e.b,y,m,e.day);});
     var paid=ent.filter(function(e){return isPaidOcc(e.b,y,m,e.day);});
-    if(!ent.length){ wrap.innerHTML='<div class="empty-msg">No bills this month. Tap “Add a bill” to start.</div>'; return; }
+    if(!ent.length && !accounts.length){ wrap.innerHTML='<div class="empty-msg">No bills this month. Tap “Add a bill” to start.</div>'; return; }
+    renderAcctSummary(wrap,y,m);
+    if(!ent.length){ var em0=document.createElement("div"); em0.className="empty-msg"; em0.textContent="No bills this month. Tap “Add a bill” to start."; wrap.appendChild(em0); return; }
     if(pastDue.length) wrap.appendChild(sectionEl("Past due", pastDue, y, m, "pastdue"));
     wrap.appendChild(sectionEl("Pending", pending, y, m, "pending"));
     wrap.appendChild(sectionEl("Paid", paid, y, m, "paid"));
   }
+
+  /* ---------- per-account monthly tracking ---------- */
+  function billCreatedYM(b){
+    // Bill ids are Date.now() timestamps for user-added bills; seed bills (tiny ids) count as always existing.
+    if(b.id>1e12){ var d=new Date(b.id); return d.getFullYear()*12+d.getMonth(); }
+    return -1;
+  }
+  function acctMonthTotals(acctId,y,m){
+    var paid=0,total=0,count=0;
+    var ym=y*12+m;
+    bills.forEach(function(b){
+      var ba=(b.acct==null)?null:b.acct;
+      if(ba!==acctId) return;
+      if(billCreatedYM(b)>ym) return;
+      occDays(b,y,m).forEach(function(d){
+        total+=b.amount; count++;
+        if(isPaidOcc(b,y,m,d)) paid+=b.amount;
+      });
+    });
+    return {paid:paid,total:total,count:count};
+  }
+  function acctSumCard(label,sub,t,unassigned,onTap){
+    var card=document.createElement("div"); card.className="asum"+(unassigned?" unassigned":"");
+    var top=document.createElement("div"); top.className="top";
+    var an=document.createElement("div"); an.className="an";
+    an.appendChild(document.createTextNode(label));
+    if(sub){ var sm=document.createElement("small"); sm.textContent=" "+sub; an.appendChild(sm); }
+    var av=document.createElement("div"); av.className="av"; av.textContent=fmtMoney(t.paid);
+    top.appendChild(an); top.appendChild(av);
+    card.appendChild(top);
+    var bar=document.createElement("div"); bar.className="bar";
+    var fill=document.createElement("i");
+    fill.style.width=(t.total>0?Math.round(t.paid/t.total*100):0)+"%";
+    bar.appendChild(fill); card.appendChild(bar);
+    var foot=document.createElement("div"); foot.className="foot";
+    var f1=document.createElement("span"); f1.textContent="pulled so far · of "+fmtMoney(t.total)+" scheduled";
+    var f2=document.createElement("span"); f2.className="hint"; f2.textContent=unassigned?"tap a bill's ✎ to set its account":"tap for history ›";
+    foot.appendChild(f1); foot.appendChild(f2);
+    card.appendChild(foot);
+    if(onTap) card.onclick=onTap;
+    return card;
+  }
+  function renderAcctSummary(wrap,y,m){
+    if(!accounts.length) return;
+    var frag=document.createDocumentFragment();
+    var head=document.createElement("div"); head.className="sec-head";
+    head.innerHTML='<span class="sec-title">By account · '+months[m].slice(0,3)+'</span><span class="sec-count">'+accounts.length+'</span>';
+    frag.appendChild(head);
+    accounts.forEach(function(a){
+      var t=acctMonthTotals(a.id,y,m);
+      frag.appendChild(acctSumCard(a.bank+(a.nick?" · "+a.nick:""), "••"+a.last4, t, false, function(){ openAcctHist(a); }));
+    });
+    var un=acctMonthTotals(null,y,m);
+    if(un.count) frag.appendChild(acctSumCard("No account set","", un, true, function(){ openAcctHist(null); }));
+    wrap.appendChild(frag);
+  }
+  var histOverlay=document.getElementById("histOverlay");
+  function openAcctHist(a){
+    var title=a?(a.bank+(a.nick?" · "+a.nick:"")+" ••"+a.last4):"Bills with no account set";
+    document.getElementById("histTitle").textContent=title;
+    var B=document.getElementById("histBody"); B.innerHTML="";
+    var now=new Date();
+    var rows=[]; var pulled12=0, sched12=0, activeMonths=0;
+    for(var k=0;k<12;k++){
+      var d=new Date(now.getFullYear(), now.getMonth()-k, 1);
+      var t=acctMonthTotals(a?a.id:null, d.getFullYear(), d.getMonth());
+      if(!t.count) continue;
+      rows.push({y:d.getFullYear(), m:d.getMonth(), t:t, current:k===0});
+      pulled12+=t.paid; sched12+=t.total; activeMonths++;
+    }
+    var sum=document.createElement("div"); sum.className="hist-sum";
+    if(activeMonths){
+      sum.innerHTML="Last "+activeMonths+" month"+(activeMonths===1?"":"s")+": <b>"+fmtMoney(pulled12)+"</b> pulled of "+fmtMoney(sched12)+" scheduled"
+        +(activeMonths>1?" · averaging <b>"+fmtMoney(pulled12/activeMonths)+"</b> a month":"");
+    } else {
+      sum.textContent="No bills have pointed at this account yet.";
+    }
+    B.appendChild(sum);
+    rows.forEach(function(r){
+      var row=document.createElement("div"); row.className="hist-row";
+      var hm=document.createElement("span"); hm.className="hm";
+      hm.textContent=months[r.m]+" "+r.y+(r.current?" (so far)":"");
+      var hv=document.createElement("span"); hv.className="hv";
+      hv.innerHTML=fmtMoney(r.t.paid)+" <small>of "+fmtMoney(r.t.total)+"</small>";
+      row.appendChild(hm); row.appendChild(hv);
+      B.appendChild(row);
+    });
+    histOverlay.classList.add("open");
+  }
+  document.getElementById("histClose").onclick=function(){ histOverlay.classList.remove("open"); };
+  histOverlay.onclick=function(e){ if(e.target===histOverlay) histOverlay.classList.remove("open"); };
 
   function sectionEl(label, arr, y, m, kind){
     var frag=document.createDocumentFragment();
@@ -796,6 +1159,8 @@ body{padding:env(safe-area-inset-top) 16px calc(env(safe-area-inset-bottom) + 90
       if(b.recur==="biweekly") subHtml+=" · every 2 wks";
       if(overdue){ var late=daysPastDueOcc(y,m,d); subHtml+=" · <span class='late'>"+late+(late===1?" day":" days")+" past due</span>"; }
       else if(paidNow){ subHtml+=" · paid ✓"; }
+      var al=acctLabel(b.acct);
+      if(al) subHtml+=" · <span class='acct'>"+escHtml(al)+"</span>";
       if(b.photo) subHtml+=" · tap to view bill";
       sub.innerHTML=subHtml;
       info.appendChild(nmline); info.appendChild(sub);
@@ -840,6 +1205,8 @@ body{padding:env(safe-area-inset-top) 16px calc(env(safe-area-inset-bottom) + 90
       if(b.recur==="biweekly") sh+=" · every 2 wks";
       if(overdue){ var late=daysPastDueOcc(y,m,d); sh+=" · <span class='late'>"+late+(late===1?" day":" days")+" past due</span>"; }
       else if(paidNow){ sh+=" · paid ✓"; }
+      var al2=acctLabel(b.acct);
+      if(al2) sh+=" · <span class='acct'>"+escHtml(al2)+"</span>";
       sub.innerHTML=sh;
       info.appendChild(nmline); info.appendChild(sub);
       row.appendChild(info);
@@ -861,7 +1228,10 @@ body{padding:env(safe-area-inset-top) 16px calc(env(safe-area-inset-bottom) + 90
   var viewer=document.getElementById("viewer");
   function openViewer(b,y,m,d){
     document.getElementById("vName").textContent=b.name;
-    document.getElementById("vSub").textContent="Due "+months[m]+" "+(d||dueDayInMonth(b,y,m))+" · "+fmtMoney(b.amount);
+    var vs="Due "+months[m]+" "+(d||dueDayInMonth(b,y,m))+" · "+fmtMoney(b.amount);
+    var val=acctLabelFull(b.acct);
+    if(val) vs+=" · pays from "+val;
+    document.getElementById("vSub").textContent=vs;
     var body=document.getElementById("vBody"); body.innerHTML="";
     if(b.photo){ var img=document.createElement("img"); img.src=b.photo; img.alt=b.name+" bill"; body.appendChild(img); }
     else {
@@ -925,9 +1295,34 @@ body{padding:env(safe-area-inset-top) 16px calc(env(safe-area-inset-bottom) + 90
     document.getElementById("f_amt").value="";
     var t=new Date();
     document.getElementById("f_date").value=t.getFullYear()+"-"+pad(t.getMonth()+1)+"-"+pad(t.getDate());
-    recur="monthly"; pendingPhoto=null; renderThumb(); updateRecurUI(); updatePreview();
+    recur="monthly"; remindDays=2; pendingPhoto=null; renderThumb(); updateRecurUI(); updateRemindUI(); populateAcctSelect(null); updatePreview();
   }
-  function updateRecurUI(){ document.querySelectorAll(".recur button").forEach(function(btn){ btn.classList.toggle("on", btn.getAttribute("data-r")===recur); }); }
+  function updateRecurUI(){ document.querySelectorAll(".recur button[data-r]").forEach(function(btn){ btn.classList.toggle("on", btn.getAttribute("data-r")===recur); }); }
+  function updateRemindUI(){ document.querySelectorAll("#remindRow button").forEach(function(btn){ btn.classList.toggle("on", parseInt(btn.getAttribute("data-d"),10)===remindDays); }); }
+  function populateAcctSelect(selectedId){
+    var s=document.getElementById("f_acct"); s.innerHTML="";
+    var o=document.createElement("option"); o.value=""; o.textContent="— not set —"; s.appendChild(o);
+    accounts.forEach(function(a){
+      var op=document.createElement("option"); op.value=String(a.id);
+      op.textContent=a.bank+" · "+(a.nick?a.nick+" ":"")+"••"+a.last4;
+      if(selectedId===a.id) op.selected=true;
+      s.appendChild(op);
+    });
+    var add=document.createElement("option"); add.value="__add"; add.textContent="＋ Add a new account…"; s.appendChild(add);
+    acctPrevVal=(selectedId!=null)?String(selectedId):"";
+  }
+  var acctPrevVal="";
+  document.getElementById("f_acct").onchange=function(){
+    if(this.value==="__add"){
+      // Keep the bill's current account visible while the sheet is open —
+      // canceling must never silently unlink it.
+      this.value=acctPrevVal;
+      acctReturnToBill=true;
+      openAcctSheet();
+    } else {
+      acctPrevVal=this.value;
+    }
+  };
   function updatePreview(){
     var pv=document.getElementById("preview"); pv.innerHTML="";
     var name=document.getElementById("f_name").value.trim();
@@ -945,7 +1340,8 @@ body{padding:env(safe-area-inset-top) 16px calc(env(safe-area-inset-bottom) + 90
   overlay.onclick=function(e){ if(e.target===overlay) closeSheet(); };
   document.getElementById("f_name").oninput=updatePreview;
   document.getElementById("f_domain").oninput=updatePreview;
-  document.querySelectorAll(".recur button").forEach(function(btn){ btn.onclick=function(){ recur=btn.getAttribute("data-r"); updateRecurUI(); }; });
+  document.querySelectorAll(".recur button[data-r]").forEach(function(btn){ btn.onclick=function(){ recur=btn.getAttribute("data-r"); updateRecurUI(); }; });
+  document.querySelectorAll("#remindRow button").forEach(function(btn){ btn.onclick=function(){ remindDays=parseInt(btn.getAttribute("data-d"),10); updateRemindUI(); }; });
 
   function openAddForDate(y,m,d){
     editId=null; document.getElementById("sheetTitle").textContent="New bill";
@@ -960,7 +1356,8 @@ body{padding:env(safe-area-inset-top) 16px calc(env(safe-area-inset-bottom) + 90
     document.getElementById("f_domain").value=b.domain||"";
     document.getElementById("f_amt").value=b.amount;
     document.getElementById("f_date").value=b.dueDate;
-    recur=b.recur; pendingPhoto=b.photo||null; renderThumb(); updateRecurUI(); updatePreview(); openSheet();
+    recur=b.recur; remindDays=(typeof b.remindDays==="number")?b.remindDays:2;
+    pendingPhoto=b.photo||null; renderThumb(); updateRecurUI(); updateRemindUI(); populateAcctSelect(b.acct!=null?b.acct:null); updatePreview(); openSheet();
   }
 
   document.getElementById("save").onclick=function(){
@@ -971,10 +1368,12 @@ body{padding:env(safe-area-inset-top) 16px calc(env(safe-area-inset-bottom) + 90
     if(!amt||amt<=0){ alert("Add an amount."); return; }
     if(!date){ alert("Pick a due date."); return; }
     var dom=cleanDomain(document.getElementById("f_domain").value)||null;
+    var acctVal=document.getElementById("f_acct").value;
+    var acctId=(acctVal===""||acctVal==="__add")?null:parseInt(acctVal,10);
     if(editId){
-      bills.forEach(function(b){ if(b.id===editId){ b.name=name;b.domain=dom;b.amount=amt;b.dueDate=date;b.recur=recur;b.photo=pendingPhoto; } });
+      bills.forEach(function(b){ if(b.id===editId){ b.name=name;b.domain=dom;b.amount=amt;b.dueDate=date;b.recur=recur;b.photo=pendingPhoto;b.acct=acctId;b.remindDays=remindDays; } });
     } else {
-      bills.push({id:Date.now(),name:name,domain:dom,amount:amt,dueDate:date,recur:recur,color:PALETTE[bills.length%PALETTE.length],paidMonths:[],photo:pendingPhoto});
+      bills.push({id:Date.now(),name:name,domain:dom,amount:amt,dueDate:date,recur:recur,color:PALETTE[bills.length%PALETTE.length],paidMonths:[],photo:pendingPhoto,acct:acctId,remindDays:remindDays});
     }
     save(); closeSheet();
     var p=date.split("-"); view=new Date(parseInt(p[0],10), parseInt(p[1],10)-1, 1);
@@ -984,7 +1383,144 @@ body{padding:env(safe-area-inset-top) 16px calc(env(safe-area-inset-bottom) + 90
   document.getElementById("prev").onclick=function(){ view.setMonth(view.getMonth()-1); render(); };
   document.getElementById("next").onclick=function(){ view.setMonth(view.getMonth()+1); render(); };
 
-  document.getElementById("exportBtn").onclick=function(){
+  /* ---------- payment accounts ---------- */
+  var acctOverlay=document.getElementById("acctOverlay");
+  var lastAddedAcctId=null;
+  function clearAcctForm(){
+    document.getElementById("a_bank").value="";
+    document.getElementById("a_nick").value="";
+    document.getElementById("a_last4").value="";
+    editAcctId=null;
+    document.getElementById("acctSave").textContent="Add account";
+  }
+  function renderAcctList(){
+    var L=document.getElementById("acctList"); L.innerHTML="";
+    if(!accounts.length){ L.innerHTML='<div class="empty-msg" style="padding:8px 0;">No accounts yet — add your first one below.</div>'; return; }
+    accounts.forEach(function(a){
+      var row=document.createElement("div"); row.className="acct-row";
+      var ai=document.createElement("div"); ai.className="ai"; ai.textContent="🏦"; row.appendChild(ai);
+      var at=document.createElement("div"); at.className="at";
+      var b=document.createElement("b"); b.textContent=a.bank+(a.nick?" · "+a.nick:"");
+      var s=document.createElement("small"); s.textContent="••••"+a.last4;
+      at.appendChild(b); at.appendChild(s); row.appendChild(at);
+      var ed=document.createElement("button"); ed.textContent="✎"; ed.setAttribute("aria-label","Edit account");
+      ed.onclick=function(){
+        editAcctId=a.id;
+        document.getElementById("a_bank").value=a.bank;
+        document.getElementById("a_nick").value=a.nick||"";
+        document.getElementById("a_last4").value=a.last4;
+        document.getElementById("acctSave").textContent="Save changes";
+      };
+      row.appendChild(ed);
+      var del=document.createElement("button"); del.textContent="🗑"; del.setAttribute("aria-label","Delete account");
+      del.onclick=function(){
+        var used=bills.filter(function(x){return x.acct===a.id;}).length;
+        var msg="Delete "+a.bank+" ••"+a.last4+"?";
+        if(used) msg+="\n\n"+used+" bill(s) point at it — they'll show no account until you pick a new one.";
+        if(!confirm(msg)) return;
+        accounts=accounts.filter(function(x){return x.id!==a.id;});
+        bills.forEach(function(x){ if(x.acct===a.id) x.acct=null; });
+        if(editAcctId===a.id) clearAcctForm();
+        markAcctsDirty(); saveAccounts(); save(); renderAcctList(); render();
+      };
+      row.appendChild(del);
+      L.appendChild(row);
+    });
+  }
+  function openAcctSheet(){ lastAddedAcctId=null; clearAcctForm(); renderAcctList(); acctOverlay.classList.add("open"); }
+  function closeAcctSheet(){
+    acctOverlay.classList.remove("open"); acctOverlay.classList.remove("kbd");
+    if(acctReturnToBill){
+      acctReturnToBill=false;
+      // Newly added account wins; otherwise restore whatever the bill had before.
+      var keep=(lastAddedAcctId!=null)?lastAddedAcctId:(acctPrevVal!==""?parseInt(acctPrevVal,10):null);
+      populateAcctSelect(keep);
+      lastAddedAcctId=null;
+    }
+  }
+  document.getElementById("acctSave").onclick=function(){
+    var bank=document.getElementById("a_bank").value.trim();
+    var nick=document.getElementById("a_nick").value.trim();
+    var last4=document.getElementById("a_last4").value.trim().replace(/\D/g,"");
+    if(!bank){ alert("Add the bank name (e.g. Qualstar)."); return; }
+    if(last4.length!==4){ alert("Enter all 4 digits at the end of the account number."); return; }
+    if(editAcctId){
+      accounts.forEach(function(a){ if(a.id===editAcctId){ a.bank=bank; a.nick=nick; a.last4=last4; } });
+    } else {
+      var na={id:Date.now(), bank:bank, nick:nick, last4:last4};
+      accounts.push(na);
+      lastAddedAcctId=na.id;
+    }
+    markAcctsDirty(); saveAccounts(); save(); clearAcctForm(); renderAcctList(); render();
+  };
+  document.getElementById("acctClose").onclick=closeAcctSheet;
+  acctOverlay.onclick=function(e){
+    if(e.target!==acctOverlay) return;
+    // Don't discard typed input when a backdrop tap was just dismissing the keyboard.
+    if(document.getElementById("a_bank").value||document.getElementById("a_nick").value||document.getElementById("a_last4").value) return;
+    closeAcctSheet();
+  };
+  // Keep the form above the iOS keyboard: top-align the sheet while an input has focus.
+  acctOverlay.addEventListener("focusin",function(e){
+    if(e.target && e.target.tagName==="INPUT"){
+      acctOverlay.classList.add("kbd");
+      try{e.target.scrollIntoView({block:"center"});}catch(err){}
+    }
+  });
+  acctOverlay.addEventListener("focusout",function(){ acctOverlay.classList.remove("kbd"); });
+  document.getElementById("mAccts").onclick=function(){ closeMenu(); openAcctSheet(); };
+
+  /* ---------- reminders ---------- */
+  var remindOverlay=document.getElementById("remindOverlay");
+  function closeRemindSheet(){ remindOverlay.classList.remove("open"); }
+  document.getElementById("remindClose").onclick=closeRemindSheet;
+  remindOverlay.onclick=function(e){ if(e.target===remindOverlay) closeRemindSheet(); };
+  document.getElementById("remindBtn").onclick=function(){ buildRemindBody(); remindOverlay.classList.add("open"); };
+
+  function buildRemindBody(){
+    var B=document.getElementById("remindBody");
+    function bindDl(){ var d=document.getElementById("dlIcs"); if(d) d.onclick=downloadIcs; }
+    if(cloudUser){
+      B.innerHTML='<div class="empty-msg">One moment…</div>';
+      ensureFeedToken(function(t){
+        if(!t){
+          B.innerHTML='<p class="remind-note" style="font-size:14px; color:var(--ink);">Couldn\'t reach the cloud just now — check your connection and reopen this.</p>'
+            +'<button class="btn" id="dlIcs" style="width:100%; margin-top:10px;">⬇ One-time download instead</button>';
+          bindDl(); return;
+        }
+        var feedUrl=FEED_BASE+"?t="+t;
+        var webcal=feedUrl.replace(/^https:\/\//,"webcal://");
+        B.innerHTML=
+          '<p class="remind-note" style="font-size:14px; color:var(--ink);">Get bill alerts on your iPhone, Apple Watch, and Mac — automatically, even when this app is closed.</p>'
+          +'<div class="bigstep"><span class="n">1</span><span>Tap the gold button below.</span></div>'
+          +'<div class="bigstep"><span class="n">2</span><span>Your phone will ask to subscribe to a calendar called <b>Bills</b> — tap <b>Subscribe</b>, then <b>Add</b>.</span></div>'
+          +'<div class="bigstep"><span class="n">3</span><span>That\'s it. Alerts arrive at <b>9&nbsp;AM</b>, timed by each bill\'s own "remind me" setting. New bills and changes flow in automatically.</span></div>'
+          +'<a class="btn primary" style="display:block; text-align:center; text-decoration:none; margin-top:10px; background:linear-gradient(135deg, var(--gold), #e8a52b); color:#14110f;" href="'+webcal+'">🔔 Turn on Apple Calendar alerts</a>'
+          +'<div class="remind-note" style="margin-top:6px;">Nothing happen? Use “Copy the link” below, or the one-time download.</div>'
+          +'<button class="btn" id="copyFeed" style="width:100%; margin-top:8px;">Copy the link instead</button>'
+          +'<div class="linkbox">'+feedUrl+'</div>'
+          +'<div class="remind-note">Copied it? Open the <b>Calendar</b> app → <b>Calendars</b> → <b>Add Calendar</b> → <b>Add Subscription Calendar</b> and paste it there.</div>'
+          +'<div class="remind-note">Marked a bill paid? Its alert quietly disappears. To turn alerts off later: Calendar app → Calendars → tap ⓘ next to <b>Bills</b> → Delete Calendar.</div>'
+          +'<button class="btn" id="dlIcs" style="width:100%; margin-top:10px;">⬇ One-time download instead (no auto-updates)</button>';
+        var cp=document.getElementById("copyFeed");
+        cp.onclick=function(){
+          function ok(){ cp.textContent="Copied ✓"; setTimeout(function(){cp.textContent="Copy the link instead";},1600); }
+          if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(feedUrl).then(ok,function(){ prompt("Copy this link:",feedUrl); }); }
+          else { prompt("Copy this link:",feedUrl); }
+        };
+        bindDl();
+      });
+    } else {
+      B.innerHTML=
+        '<p class="remind-note" style="font-size:14px; color:var(--ink);">Sign in first, and your bills can feed straight into Apple Calendar — alerts on iPhone, Watch, and Mac that update themselves.</p>'
+        +'<button class="btn primary" id="remindSignIn" style="width:100%; margin-top:8px;">Sign in to turn on live alerts</button>'
+        +'<button class="btn" id="dlIcs" style="width:100%; margin-top:8px;">⬇ One-time download to Apple Calendar</button>';
+      document.getElementById("remindSignIn").onclick=function(){ closeRemindSheet(); try{localStorage.removeItem(SKIP);}catch(e){} showAuth(); };
+      bindDl();
+    }
+  }
+
+  function downloadIcs(){
     var y=view.getFullYear(), m=view.getMonth();
     var fullYear=confirm("OK = add the next 12 months of due dates.\nCancel = just "+months[m]+" "+y+".");
     var span=fullYear?12:1;
@@ -997,16 +1533,23 @@ body{padding:env(safe-area-inset-top) 16px calc(env(safe-area-inset-bottom) + 90
         var b=e.b;
         var dd=e.day;
         var ds=yy+pad(mm+1)+pad(dd);
+        var remind=(typeof b.remindDays==="number")?b.remindDays:2;
+        var hoursBefore=remind*24-9;
+        var trig=hoursBefore<=0?"PT9H":("-PT"+hoursBefore+"H");
+        var when=remind===0?"today":(remind===1?"tomorrow":("in "+remind+" days"));
+        var desc="Bill payment reminder";
+        var al=acctLabelFull(b.acct);
+        if(al) desc+=" · pays from "+al;
         lines.push("BEGIN:VEVENT");
         lines.push("UID:"+b.id+"-"+ds+"@billcal");
         lines.push("DTSTART;VALUE=DATE:"+ds);
         lines.push("DTEND;VALUE=DATE:"+ds);
-        lines.push("SUMMARY:"+b.name+" — "+fmtMoney(b.amount)+" due");
-        lines.push("DESCRIPTION:Bill payment reminder");
+        lines.push("SUMMARY:"+escapeIcs(b.name+" — "+fmtMoney(b.amount)+" due"));
+        lines.push("DESCRIPTION:"+escapeIcs(desc));
         lines.push("BEGIN:VALARM");
-        lines.push("TRIGGER:-P1D");
+        lines.push("TRIGGER:"+trig);
         lines.push("ACTION:DISPLAY");
-        lines.push("DESCRIPTION:"+b.name+" due tomorrow");
+        lines.push("DESCRIPTION:"+escapeIcs(b.name+" — "+fmtMoney(b.amount)+" due "+when));
         lines.push("END:VALARM");
         lines.push("END:VEVENT");
         count++;
@@ -1015,16 +1558,12 @@ body{padding:env(safe-area-inset-top) 16px calc(env(safe-area-inset-bottom) + 90
     lines.push("END:VCALENDAR");
     if(!count){ alert("No bills in that period to add."); return; }
     var blob=new Blob([lines.join("\r\n")],{type:"text/calendar"});
-    var url=URL.createObjectURL(blob);
-    var a=document.createElement("a"); a.href=url; a.download=fullYear?("bills-next-12-months.ics"):("bills-"+months[m]+"-"+y+".ics"); document.body.appendChild(a); a.click(); a.remove();
-    setTimeout(function(){URL.revokeObjectURL(url);},1000);
-  };
+    deliverFile(blob, fullYear?("bills-next-12-months.ics"):("bills-"+months[m]+"-"+y+".ics"));
+  }
 
   document.getElementById("mBackup").onclick=function(){
-    var blob=new Blob([JSON.stringify({app:"billcal",version:2,exported:new Date().toISOString(),bills:bills})],{type:"application/json"});
-    var url=URL.createObjectURL(blob);
-    var a=document.createElement("a"); a.href=url; a.download="bill-calendar-backup.json"; document.body.appendChild(a); a.click(); a.remove();
-    setTimeout(function(){URL.revokeObjectURL(url);},1000);
+    var blob=new Blob([JSON.stringify({app:"billcal",version:3,exported:new Date().toISOString(),bills:bills,accounts:accounts})],{type:"application/json"});
+    deliverFile(blob, "bill-calendar-backup.json");
   };
   document.getElementById("mRestore").onclick=function(){ document.getElementById("restoreInput").click(); };
   document.getElementById("restoreInput").onchange=function(e){
@@ -1036,6 +1575,7 @@ body{padding:env(safe-area-inset-top) 16px calc(env(safe-area-inset-bottom) + 90
         var arr=Array.isArray(data)?data:data.bills;
         if(!Array.isArray(arr)||!arr.length||!arr[0].name||arr[0].amount===undefined) throw new Error("bad");
         if(!confirm("Replace your current "+bills.length+" bill(s) with the "+arr.length+" bill(s) from this backup?")) return;
+        if(data && Array.isArray(data.accounts)){ accounts=data.accounts; markAcctsDirty(); saveAccounts(); }
         bills=arr; save(); render();
         alert("Backup restored — "+arr.length+" bill(s) loaded.");
       }catch(err){ alert("That file doesn't look like a Bill Calendar backup."); }
